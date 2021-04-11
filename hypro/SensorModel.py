@@ -1,9 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Functions to create a sensor model.
-@author: Nanfeng Liu (nliu58@wisc.edu)
-"""
+#
+# Copyright (C) 2021 by Nanfeng Liu <nliu58@wisc.edu>
+# Licensed GNU GPL v3; see `../LICENSE` for complete terms.
+#
+# Environmental Spectroscopy Laboratory
+# Dept. of Forest and Wildlife Ecology
+# University of Wisconsin - Madison
+
+""" Functions to create a sensor model. """
+
 import logging, os, numpy as np
 logger = logging.getLogger(__name__)
 

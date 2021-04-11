@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Oct 24 10:38:51 2019
-
-@author: nanfeng
-"""
+#
+# Copyright (C) 2021 by Nanfeng Liu <nliu58@wisc.edu>
+# Licensed GNU GPL v3; see `../LICENSE` for complete terms.
+#
+# Environmental Spectroscopy Laboratory
+# Dept. of Forest and Wildlife Ecology
+# University of Wisconsin - Madison
 
 from ENVI import read_envi_header, write_envi_header
 import numpy as np

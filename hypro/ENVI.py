@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2021 by Nanfeng Liu <nliu58@wisc.edu>
+# Licensed GNU GPL v3; see `../LICENSE` for complete terms.
+#
+# Environmental Spectroscopy Laboratory
+# Dept. of Forest and Wildlife Ecology
+# University of Wisconsin - Madison
 
 """ Functions to process ENVI format data.
-@author: Nanfeng Liu (nliu58@wisc.edu)
-"""
 
-"""
-Notes:
-    (1) The code is adapted from the HyTools:
+    Notes
+    -----
+    (1) The code is adapted from HyTools:
         https://github.com/EnSpec/HyTools-sandbox/blob/master/hytools/file_io/envi_read.py
         https://github.com/EnSpec/HyTools-sandbox/blob/master/hytools/file_io/envi_write.py
 """

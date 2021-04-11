@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2021 by Nanfeng Liu <nliu58@wisc.edu>
+# Licensed GNU GPL v3; see `../LICENSE` for complete terms.
+#
+# Environmental Spectroscopy Laboratory
+# Dept. of Forest and Wildlife Ecology
+# University of Wisconsin - Madison
 
-""" Functions to make figures.
-@author: Nanfeng Liu (nliu58@wisc.edu)
-"""
+""" Functions to make figures. """
 
 import logging, os, matplotlib.pyplot as plt, numpy as np
 try:
