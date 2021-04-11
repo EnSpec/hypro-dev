@@ -1,0 +1,9 @@
+# hypro dependencies
+numpy
+pandas
+numba
+scipy
+gdal
+shapely
+matplotlib
+
