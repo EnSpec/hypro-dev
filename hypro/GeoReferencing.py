@@ -9,7 +9,8 @@
 
 """ Functions to do geo-referencing. """
 
-import gdal, logging, os, numpy as np
+from osgeo import gdal
+import logging, os, numpy as np
 logger = logging.getLogger(__name__)
 from numba import guvectorize, jit
 import warnings

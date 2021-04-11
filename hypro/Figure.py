@@ -10,10 +10,7 @@
 """ Functions to make figures. """
 
 import logging, os, matplotlib.pyplot as plt, numpy as np
-try:
-    from osgeo import gdal
-except:
-    import gdal
+from osgeo import gdal
 
 mpl_logger = logging.getLogger('matplotlib')
 mpl_logger.setLevel(logging.WARNING)

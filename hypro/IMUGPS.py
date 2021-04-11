@@ -9,7 +9,8 @@
 
 """ Functions to process Hyspex IMU and GPS data. """
 
-import logging, os, osr, numpy as np
+from osgeo import osr
+import logging, os, numpy as np
 logger = logging.getLogger(__name__)
 
 def prepare_imugps_Hyspex(processed_imugps_file, raw_imugps_file, boresight_offsets, map_crs, boresight_options):

@@ -9,7 +9,8 @@
 
 """ Functions to process map coordinate systems. """
 
-import gdal, os, osr, numpy as np
+from osgeo import gdal, osr
+import os, numpy as np
 
 def get_utm_zone(lon):
     """ Calculate UTM zone.
