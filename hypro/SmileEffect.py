@@ -29,11 +29,13 @@ absorption_features = {429:  [424, 437],
 
 def detect_smile_effect(sensor_dict, atm_lut_file):
     """ Detect smile effect.
-    Arguments:
-        sensor_dict: dict
-            Sensor configurations.
-        atm_lut_file: str
-            Raw atmosphere lookup table filename.
+
+    Parameters
+    ----------
+    sensor_dict: dict
+        Sensor configurations.
+    atm_lut_file: str
+        Raw atmosphere lookup table filename.
     """
 
     if os.path.exists(sensor_dict['smile_effect_at_atm_features_file']) and os.path.exists(sensor_dict['smile_effect_file']):
@@ -104,7 +106,7 @@ def detect_smile_effect(sensor_dict, atm_lut_file):
         interpolate_values(wvc, wvc_isnan) # Replace NaNs with interpolated values
     logger.info('WVC [mm] statistics: min=%.2f, max=%.2f, avg=%.2f, sd=%.2f.' %(wvc.min(), wvc.max(), wvc.mean(), wvc.std()))
     del wvc_models, model
-    
+
     # Interpolate atmospheric look-up table.
     logger.info('Interpolate atmospheric look-up table.')
     atm_lut_wave, atm_lut_rdn = interp_atm_lut(atm_lut_file, wvc, vis, vza, raa) # shape=(samples, bands)
@@ -157,7 +159,7 @@ def detect_smile_effect(sensor_dict, atm_lut_file):
     del p, x, atm_lut_rdn
     sensor_rdn.flush()
     del sensor_rdn
-    
+
     # Reshape data.
     shifts = np.dstack(shifts).astype('float32').swapaxes(0,1).swapaxes(1,2)
 
@@ -229,16 +231,20 @@ def detect_smile_effect(sensor_dict, atm_lut_file):
 def interp_atm_lut(atm_lut_file, WVC, VIS, VZA, RAA):
     """ Interpolate atmosphere look-up-table to different water vapor columns (WVC),
         visibilities (VIS), view zenith angles (VZA) and relative azimuth angles (RAA).
-    Arguments:
-        atm_lut_file: str
-            Atmosphere look-up-table filename.
-        WVC, VIS, VZA, RAA: list of floats
-            Water vapor column, visibility, view zenith angles and relative azimuth angles.
-    Returns:
-        WAVE: array
-            Wavelengths of the atmosphere look-up-table radiance.
-        lut_rdn: 2D array
-            Interpolated path radiance (albedo=0.0, 0.5, 1.0).
+
+    Parameters
+    ----------
+    atm_lut_file: str
+        Atmosphere look-up-table filename.
+    WVC, VIS, VZA, RAA: list of floats
+        Water vapor column, visibility, view zenith angles and relative azimuth angles.
+
+    Returns
+    -------
+    WAVE: array
+        Wavelengths of the atmosphere look-up-table radiance.
+    lut_rdn: 2D array
+        Interpolated path radiance (albedo=0.0, 0.5, 1.0).
     """
 
     from AtmLUT import read_binary_metadata, get_interp_range, combos
@@ -283,20 +289,22 @@ def interp_atm_lut(atm_lut_file, WVC, VIS, VZA, RAA):
     # Clear atmosphere look-up table.
     atm_lut.flush()
     del atm_lut
-    
+
     return atm_lut_WAVE, interp_rdn
 
 def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_file):
     """ Average radiance along each column.
-    Arguments:
-        avg_rdn_file: str
-            Average radiance data filename.
-        rdn_image_file: 3D array
-            Radiance image filename, in BIL format.
-        sca_image_file: 3D array
-            Scan angle image filename, in BSQ format.
-        pre_class_image_file: str
-            Pre-classification image filename.
+
+    Parameters
+    ----------
+    avg_rdn_file: str
+        Average radiance data filename.
+    rdn_image_file: 3D array
+        Radiance image filename, in BIL format.
+    sca_image_file: 3D array
+        Scan angle image filename, in BSQ format.
+    pre_class_image_file: str
+        Pre-classification image filename.
     """
 
     if os.path.exists(avg_rdn_file):
@@ -357,7 +365,7 @@ def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_fi
     logger.info(info)
     rdn_image.flush()
     del rdn_image
-    
+
     # Read scan angles.
     sca_header = read_envi_header(os.path.splitext(sca_image_file)[0]+'.hdr')
     sca_image = np.memmap(sca_image_file,
@@ -376,7 +384,7 @@ def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_fi
     avg_raa[avg_raa>180] = 360.0-avg_raa[avg_raa>180]
     sca_image.flush()
     del sca_image
-    
+
     # Write header.
     avg_rdn_header = empty_envi_header()
     avg_rdn_header['description'] = 'Averaged radiance in [mW/(cm2*um*sr)]'
@@ -397,34 +405,40 @@ def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_fi
 
 def interpolate_values(A, map):
     """ Replace array elements with interpolated values. Input array is modified in-place.
-    Arguments:
-        A: 1D array
-		    Input array to be modified.
-		map: 1D array
-		    Boolean map indicating which elements should be replaced
+
+    Parameters
+    ----------
+    A: 1D array
+        Input array to be modified.
+    map: 1D array
+        Boolean map indicating which elements should be replaced
     """
-    
+
     def indices(x): return x.nonzero()[0]
     A[map] = np.interp(indices(map), indices(~map), A[~map])
 
 def cost_fun(shifts, sensor_wave, sensor_fwhm, sensor_rdn, lut_wave, lut_rdn):
     """ Cost function.
-    Arguments:
-        shifts: list of float
-            Shift in wavelength and FWHM.
-        sensor_wave: 1D array
-            Sensor wavelengths.
-        sensor_fwhm: 1D array
-            Sensor FWHMs.
-        sensor_rdn: 1D array
-            Sensor radiance.
-        lut_wave: 1D array
-            LUT wavelengths.
-        lut_rdn: 1D array
-            LUT at-sensor radiance.
-    Returns:
-        cost: float
-            Squared error.
+
+    Parameters
+    ----------
+    shifts: list of float
+        Shift in wavelength and FWHM.
+    sensor_wave: 1D array
+        Sensor wavelengths.
+    sensor_fwhm: 1D array
+        Sensor FWHMs.
+    sensor_rdn: 1D array
+        Sensor radiance.
+    lut_wave: 1D array
+        LUT wavelengths.
+    lut_rdn: 1D array
+        LUT at-sensor radiance.
+
+    Returns
+    -------
+    cost: float
+        Squared error.
     """
 
     from Spectra import continuum_removal, resample_spectra

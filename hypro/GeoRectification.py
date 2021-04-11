@@ -10,13 +10,15 @@ logger = logging.getLogger(__name__)
 
 def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
     """ Do orthorectifications on SCA.
-    Arguments:
-        ortho_sca_image_file: str
-            Orthorectified SCA image filename.
-        sca_image_file: str
-            SCA image filename.
-        glt_image_file: str
-            Geographic look-up table image filename.
+
+    Parameters
+    ----------
+    ortho_sca_image_file: str
+        Orthorectified SCA image filename.
+    sca_image_file: str
+        SCA image filename.
+    glt_image_file: str
+        Geographic look-up table image filename.
     """
 
     if os.path.exists(ortho_sca_image_file):
@@ -59,7 +61,7 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
     del ortho_sca_image
     glt_image.flush()
     del glt_image
-    
+
     # Write header
     ortho_sca_header = empty_envi_header()
     ortho_sca_header['description'] = 'Geo-rectified SCA, in [deg]'
@@ -84,13 +86,15 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
 
 def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
     """ Do orthorectifications on DEM.
-    Arguments:
-        ortho_dem_image_file: str
-            Orthorectified DEM image filename.
-        igm_image_file: str
-            IGM image filename.
-        glt_image_file: str
-            Geographic look-up table image filename.
+
+    Parameters
+    ----------
+    ortho_dem_image_file: str
+        Orthorectified DEM image filename.
+    igm_image_file: str
+        IGM image filename.
+    glt_image_file: str
+        Geographic look-up table image filename.
     """
 
     if os.path.exists(ortho_dem_image_file):
@@ -132,7 +136,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
     igm_image.flush()
     glt_image.flush()
     del igm_image, glt_image
-    
+
     # Write header.
     ortho_dem_header = empty_envi_header()
     ortho_dem_header['description'] = 'Geo-rectified DEM, in [m]'
@@ -154,13 +158,15 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
 
 def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
     """ Do orthorectifications on radiance.
-    Arguments:
-        ortho_rdn_image_file: str
-            Orthorectified radiance filename.
-        rdn_image_file: str
-            Radiance image filename.
-        glt_image_file: str
-            Geographic look-up table image filename.
+
+    Parameters
+    ----------
+    ortho_rdn_image_file: str
+        Orthorectified radiance filename.
+    rdn_image_file: str
+        Radiance image filename.
+    glt_image_file: str
+        Geographic look-up table image filename.
     """
 
     if os.path.exists(ortho_rdn_image_file):
@@ -208,7 +214,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
     rdn_image.flush()
     glt_image.flush()
     del rdn_image, glt_image
-    
+
     # Write header.
     ortho_rdn_header = empty_envi_header()
     ortho_rdn_header['description'] = 'Geo-rectified radiance, in [mW/(cm2*um*sr)]'

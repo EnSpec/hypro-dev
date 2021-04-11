@@ -17,11 +17,13 @@ logger = logging.getLogger(__name__)
 
 def plot_angle_geometry(angle_geometry_figure_file, sca_image_file):
     """ Plot the sun-target-view geometry in a polar coordinate system.
-    Arguments:
-        angle_geometry_figure_file: str
-            Angle geometry figure filename.
-        sca_image_file: str
-            Scan angle image filename.
+
+    Parameters
+    ----------
+    angle_geometry_figure_file: str
+        Angle geometry figure filename.
+    sca_image_file: str
+        Scan angle image filename.
     """
 
     if os.path.exists(angle_geometry_figure_file):
@@ -44,7 +46,7 @@ def plot_angle_geometry(angle_geometry_figure_file, sca_image_file):
     ax.scatter(np.deg2rad(sca_image[1,::10,::10].flatten()), sca_image[0,::10,::10].flatten(), color='green', marker='.',s=10)
     sca_image.flush()
     del sca_image
-    
+
     # Scatter-plot sun geometry.
     ax.scatter(np.deg2rad(float(sca_header['sun azimuth'])), float(sca_header['sun zenith']), color='red', marker='*', s=500)
     ax.set_theta_direction(-1)
@@ -59,15 +61,17 @@ def plot_angle_geometry(angle_geometry_figure_file, sca_image_file):
 
 def plot_image_area(image_area_figure_file, dem_image_file, igm_image_file, imugps_file):
     """ Plot image area (DEM is used as the background).
-    Arguments:
-        image_area_figure_file: str
-            Image area figure filename.
-        dem_image_file: str
-            DEM image filename.
-        igm_image_file: str
-            IGM image filename.
-        imugps_file: str
-            IMUGPS filename.
+
+    Parameters
+    ----------
+    image_area_figure_file: str
+        Image area figure filename.
+    dem_image_file: str
+        DEM image filename.
+    igm_image_file: str
+        IGM image filename.
+    imugps_file: str
+        IMUGPS filename.
     """
 
     if os.path.exists(image_area_figure_file):
@@ -93,7 +97,7 @@ def plot_image_area(image_area_figure_file, dem_image_file, igm_image_file, imug
     rows = (igm_image[1,:,:]-dem_geotransform[3])/dem_geotransform[5]
     igm_image.flush()
     del igm_image
-    
+
     # Read IMUGPS
     imugps = np.loadtxt(imugps_file)
 
@@ -121,14 +125,20 @@ def plot_image_area(image_area_figure_file, dem_image_file, igm_image_file, imug
 
 def linear_percent_stretch(raw_image):
     """ Do linear percent stretch.
-    References:
-        (1) https://www.harrisgeospatial.com/docs/BackgroundStretchTypes.html
-    Arguments:
-        raw_image: 2D array
-            Raw image data.
-    Returns:
-        stretched_image: 2D array
-            Percent_stretched image.
+
+    References
+    ----------
+    (1) https://www.harrisgeospatial.com/docs/BackgroundStretchTypes.html
+
+    Parameters
+    ----------
+    raw_image: 2D array
+        Raw image data.
+
+    Returns
+    -------
+    stretched_image: 2D array
+        Percent_stretched image.
     """
 
     stretched_image = np.zeros(raw_image.shape, dtype='uint8')
@@ -144,13 +154,15 @@ def linear_percent_stretch(raw_image):
 
 def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
     """ Make a RGB quicklook image.
-    Arguments:
-        quicklook_figure_file: str
-            Geo-rectified quicklook figure filename.
-        rdn_image_file: str
-            Radiance image filename, in BIL format.
-        glt_image_file: str
-            GLT image filename.
+
+    Parameters
+    ----------
+    quicklook_figure_file: str
+        Geo-rectified quicklook figure filename.
+    rdn_image_file: str
+        Radiance image filename, in BIL format.
+    glt_image_file: str
+        GLT image filename.
     """
 
     if os.path.exists(quicklook_figure_file):
@@ -224,11 +236,13 @@ def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
 
 def plot_avg_rdn(avg_rdn_figure_file, avg_rdn_file):
     """ Plot average radiance to a figure.
-    Arguments:
-        avg_rdn_figure_file: str
-            Average radiance figure filename.
-        avg_rdn_file: str
-            Average radiance filename.
+
+    Parameters
+    ----------
+    avg_rdn_figure_file: str
+        Average radiance figure filename.
+    avg_rdn_file: str
+        Average radiance filename.
     """
 
     if os.path.exists(avg_rdn_figure_file):
@@ -255,16 +269,18 @@ def plot_avg_rdn(avg_rdn_figure_file, avg_rdn_file):
     plt.close()
     avg_rdn.flush()
     del avg_rdn
-    
+
     logger.info('Save the average radiance spectra figure to %s.' %avg_rdn_figure_file)
 
 def plot_wvc_model(wvc_model_figure_file, wvc_model_file):
     """ Plot the WVC model to a figure.
-    Arguments:
-        wvc_model_figure_file: str
-            Water vapor column model figure filename.
-        wvc_model_file: str
-            Water vapor column model filename.
+
+    Parameters
+    ----------
+    wvc_model_figure_file: str
+        Water vapor column model figure filename.
+    wvc_model_file: str
+        Water vapor column model filename.
     """
 
     if os.path.exists(wvc_model_figure_file):
@@ -297,11 +313,13 @@ def plot_wvc_model(wvc_model_figure_file, wvc_model_file):
 
 def plot_smile_effect(smile_effect_at_atm_features_figure_file, smile_effect_at_atm_features_file):
     """ Plot smile effects at different atmosphere absorption features.
-    Arguments:
-        smile_effect_figure_file: str
-            Smile effect figure filename.
-        smile_effect_at_atm_features_file: str
-            Smile effect at atm features filename.
+
+    Parameters
+    ----------
+    smile_effect_figure_file: str
+        Smile effect figure filename.
+    smile_effect_at_atm_features_file: str
+        Smile effect at atm features filename.
     """
 
     if os.path.exists(smile_effect_at_atm_features_figure_file):
@@ -390,11 +408,14 @@ def plot_smile_effect(smile_effect_at_atm_features_figure_file, smile_effect_at_
     del fig, ax, axs, header
     shifts.flush()
     del shifts
-    
+
     logger.info('Save smile effect at atmosphere absorption features figure to %s.' %smile_effect_at_atm_features_figure_file)
 
 def plot_wvc_histogram(wvc_histogram_figure_file, water_vapor_column_image_file):
     """ Plot water vapor column histogram.
+
+    Parameters
+    ----------
     wvc_histogram_figure_file: str
         Water vapor column histogram figure filename.
     water_vapor_column_image_file: str
@@ -436,8 +457,8 @@ def plot_wvc_histogram(wvc_histogram_figure_file, water_vapor_column_image_file)
     plt.legend(fontsize=20)
     plt.savefig(wvc_histogram_figure_file, dpi=1000)
     plt.close()
-    
+
     wvc_image.flush()
     del wvc_image
-    
+
     logger.info('Save water vapor column histogram figure to %s.' %wvc_histogram_figure_file)

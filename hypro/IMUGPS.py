@@ -10,19 +10,21 @@ logger = logging.getLogger(__name__)
 
 def prepare_imugps_Hyspex(processed_imugps_file, raw_imugps_file, boresight_offsets, map_crs, boresight_options):
     """ Prepare Hyspex IMU and GPS data.
-    Arguments:
-        processed_imugps_file: str
-            Processed IMUGPS filename.
-        raw_imugps_file: str
-            Raw IMUGPS filename.
-        boresight_offsets: list of float
-            Boresight offsets, [roll_offset, pitch_offset, heading_offset, altitude_offset].
-        boresight_options: list of boolean
-            Boresight offset options, true or false.
-        map_crs: osr object
-            Map coordinate system.
+
+    Parameters
+    ----------
+    processed_imugps_file: str
+        Processed IMUGPS filename.
+    raw_imugps_file: str
+        Raw IMUGPS filename.
+    boresight_offsets: list of float
+        Boresight offsets, [roll_offset, pitch_offset, heading_offset, altitude_offset].
+    boresight_options: list of boolean
+        Boresight offset options, true or false.
+    map_crs: osr object
+        Map coordinate system.
     """
-    
+
     if os.path.exists(processed_imugps_file):
         logger.info('Write the IMU and GPS data to %s.' %processed_imugps_file)
         return

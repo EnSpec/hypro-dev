@@ -16,12 +16,16 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 def estimate_fwhms_from_waves(waves):
     """ Estimate fwhm from wavelengths.
-    Arguments:
-        waves: array
-            Wavelengths, in nm.
-    Returns:
-        fwhms: array
-            Full width at half maximum, in nm.
+
+    Parameters
+    ----------
+    waves: array
+        Wavelengths, in nm.
+
+    Returns
+    -------
+    fwhms: array
+        Full width at half maximum, in nm.
     """
 
     gap = 0.5*np.diff(waves)
@@ -32,15 +36,19 @@ def estimate_fwhms_from_waves(waves):
 
 def gaussian(x, mu, fwhm):
     """ Return a gaussian distribution.
-    Arguments:
-        x: array
-            Wavelengths along which to generate gaussian.
-        mu: float
-            Centre wavelength.
-        fwhm: float
-            Full width half maximum.
-    Returns:
-        Numpy array of gaussian along input range.
+
+    Parameters
+    ----------
+    x: array
+        Wavelengths along which to generate gaussian.
+    mu: float
+        Centre wavelength.
+    fwhm: float
+        Full width half maximum.
+
+    Returns
+    -------
+    Numpy array of gaussian along input range.
     """
 
     sigma = fwhm/(2*np.sqrt(2*np.log(2)))+1e-10
@@ -49,23 +57,30 @@ def gaussian(x, mu, fwhm):
 
 def resample_spectra(spectra, src_waves, dst_waves, dst_fwhms, src_fwhms=None):
     """ Return a set of coeffiencients for spectrum resampling.
-    Notes:
-        (1) Given a set of source wavelengths, destination wavelengths and FWHMs, this
-            function caculates the relative contribution or each input wavelength to
-            the output wavelength. It assumes that output response functions follow
-            a gaussian distribution.
-    Arguments:
-        spectra: array
-            Spectra to be resampled.
-        src_waves: array
-            List of source wavelength centers.
-        dst_waves: array
-            List of destination wavelength centers.
-        dst_fwhms: array
-            List of destination full width half maxes.
-        src_fwhms: array
-            List of source full width half maxes.
-    Returns:
+
+    Notes
+    -----
+    (1) Given a set of source wavelengths, destination wavelengths and FWHMs, this
+        function caculates the relative contribution or each input wavelength to
+        the output wavelength. It assumes that output response functions follow
+        a gaussian distribution.
+
+    Parameters
+    ----------
+    spectra: array
+        Spectra to be resampled.
+    src_waves: array
+        List of source wavelength centers.
+    dst_waves: array
+        List of destination wavelength centers.
+    dst_fwhms: array
+        List of destination full width half maxes.
+    src_fwhms: array
+        List of source full width half maxes.
+
+    Returns
+    -------
+    ndarray
         m x n matrix of coeffiecients, where m is the number of source wavelengths
         and n is the number of destination wavelengths.
     """
@@ -105,12 +120,17 @@ def resample_spectra(spectra, src_waves, dst_waves, dst_fwhms, src_fwhms=None):
 
 def get_closest_wave(waves, center_wave):
     """ Get the band index whose wavelength is closest to `center_wav`.
-    Arguments:
-        waves: array
-            Wavelength array.
-        center_wave: float
-            Center wavelength.
-    Returns:
+
+    Parameters
+    ----------
+    waves: array
+        Wavelength array.
+    center_wave: float
+        Center wavelength.
+
+    Returns
+    -------
+    tuple
         Closest wavelength and its band index.
     """
 
@@ -120,14 +140,18 @@ def get_closest_wave(waves, center_wave):
 
 def continuum_removal(spectra, waves):
     """Continuum remove spectra.
-    Arguments:
-        spectra: 1D or 2D array
-            Raw spectral data, dimension: [Bands] or [Bands, Columns].
-        waves: list
-            Spectral wavelengths.
-    Returns:
-        cont_rm_spectra: 1D or 2D array
-            Continuum removed spectra, dimension: [Bands] or [Bands, Columns].
+
+    Parameters
+    ----------
+    spectra: 1D or 2D array
+        Raw spectral data, dimension: [Bands] or [Bands, Columns].
+    waves: list
+        Spectral wavelengths.
+
+    Returns
+    -------
+    cont_rm_spectra: 1D or 2D array
+        Continuum removed spectra, dimension: [Bands] or [Bands, Columns].
     """
 
     waves = np.array(waves)
@@ -138,16 +162,20 @@ def continuum_removal(spectra, waves):
 
 def resample_solar_flux(solar_flux_file, sensor_waves, sensor_fwhms):
     """ Resample solar flux to sensor wavelengths.
-    Arguments:
-        solar_flux_file: str
-            Solar flux filename.
-        sensor_waves: array
-            Sensor wavelengths.
-        sensor_fwhms: array
-            Sensor FWHMs.
-    Returns:
-        solar_flux: array
-            Resampled solar flux.
+
+    Parameters
+    ----------
+    solar_flux_file: str
+        Solar flux filename.
+    sensor_waves: array
+        Sensor wavelengths.
+    sensor_fwhms: array
+        Sensor FWHMs.
+
+    Returns
+    -------
+    solar_flux: array
+        Resampled solar flux.
     """
 
     solar_flux = np.loadtxt(solar_flux_file)

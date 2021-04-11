@@ -12,20 +12,24 @@ def atm_corr_band(atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA, atm_lut,
                   wvc_image, vis_image, vza_image, raa_image, rdn_image,
                   bg_mask):
     """ Do atmospheric correction for one band.
-    Arguments:
-        atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA: list of floats
-            Atmospheric lookup table water vapor column, visibility, view zenith and relative azimuth angle grids.
-        atm_lut: ndarray
-            Atmospheric lookup table, shape = (RHO, WVC, VIS, VZA, RAA).
-        wvc_image, vis_image, vza_image, raa_image: 2D arrays.
-            Water vapor column, visibility, view zenith and relative azimuth angle images.
-        rdn_image: 2D array
-            Radiance image.
-        bg_mask: 2D bool array
-            Background mask.
-    Returns:
-        rho: 2D array
-            Surface refletance.
+
+    Parameters
+    ----------
+    atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA: list of floats
+        Atmospheric lookup table water vapor column, visibility, view zenith and relative azimuth angle grids.
+    atm_lut: ndarray
+        Atmospheric lookup table, shape = (RHO, WVC, VIS, VZA, RAA).
+    wvc_image, vis_image, vza_image, raa_image: 2D arrays.
+        Water vapor column, visibility, view zenith and relative azimuth angle images.
+    rdn_image: 2D array
+        Radiance image.
+    bg_mask: 2D bool array
+        Background mask.
+
+    Returns
+    -------
+    rho: 2D array
+        Surface refletance.
     """
 
     from scipy.interpolate import RegularGridInterpolator
@@ -57,10 +61,13 @@ def atm_corr_band(atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA, atm_lut,
 
 def atm_corr_image(flight_dict):
     """ Do atmospheric corrections on the whole image.
-    Arguments:
-        flight_dict: dict
-            Flight dictionary.
+
+    Parameters
+    ----------
+    flight_dict: dict
+        Flight dictionary.
     """
+
     if os.path.exists(flight_dict['refl_file']):
         logger.info('Write the reflectance image to %s.' %flight_dict['refl_file'])
         return
@@ -108,7 +115,7 @@ def atm_corr_image(flight_dict):
     sca_image.flush()
     del sca_header, saa
     del sca_image
-    
+
     # Read wvc and vis image.
     wvc_header = read_envi_header(os.path.splitext(flight_dict['wvc_file'])[0]+'.hdr')
     tmp_wvc_image = np.memmap(flight_dict['wvc_file'],
@@ -129,7 +136,7 @@ def atm_corr_image(flight_dict):
     tmp_vis_image.flush()
     del wvc_header, vis_header
     del tmp_vis_image, tmp_wvc_image
-    
+
     # Read background mask.
     bg_header = read_envi_header(os.path.splitext(flight_dict['background_mask_file'])[0]+'.hdr')
     bg_mask = np.memmap(flight_dict['background_mask_file'],
@@ -164,7 +171,7 @@ def atm_corr_image(flight_dict):
         if (rdn_header['wavelength'][band]>=1340.0 and rdn_header['wavelength'][band]<=1440.0) or (rdn_header['wavelength'][band]>=1800.0 and rdn_header['wavelength'][band]<=1980.0) or rdn_header['wavelength'][band]>=2460.0:
             fid.write(np.zeros((rdn_header['lines'], rdn_header['samples'])).astype('float32').tostring())
         else:
-            offset = rdn_header['header offset']+4*band*rdn_header['lines']*rdn_header['samples']# in bytes      
+            offset = rdn_header['header offset']+4*band*rdn_header['lines']*rdn_header['samples']# in bytes
             rdn_image = np.memmap(flight_dict['merged_rdn_file'],
                                   dtype='float32',
                                   mode='r',
@@ -177,7 +184,7 @@ def atm_corr_image(flight_dict):
             fid.write(refl.astype('float32').tostring())
             rdn_image.flush()
             del refl, rdn_image
-            
+
     fid.close()
     info += '%d, Done!' %band
     logger.info(info)
@@ -187,8 +194,7 @@ def atm_corr_image(flight_dict):
     atm_lut.flush()
     bg_mask.flush()
     del atm_lut, bg_mask
-    
+
     rdn_header['description'] = 'Reflectance [0-1]'
     write_envi_header(os.path.splitext(flight_dict['refl_file'])[0]+'.hdr', rdn_header)
     logger.info('Write the reflectance image to %s.' %flight_dict['refl_file'])
-

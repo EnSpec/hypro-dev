@@ -10,23 +10,24 @@ logger = logging.getLogger(__name__)
 
 def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_file, dem_image_file, boresight_options):
     """ Do boresight calibration.
-    Arguments:
-        boresight_file: str
-            Boresight filename.
-        gcp_file: str
-            Ground control points filename.
-        igm_image_file: str
-            The IGM image filename.
-        imugps_file: str
-            The IMUGPS filename.
-        sensor_model_file: str
-            The sensor model filename.
-        dem_image_file: str
-            The DEM image filename.
-        boresight_options: list of boolean
-            Boresight offset options, true or false.
-    """
 
+    Parameters
+    ----------
+    boresight_file: str
+        Boresight filename.
+    gcp_file: str
+        Ground control points filename.
+    igm_image_file: str
+        The IGM image filename.
+    imugps_file: str
+        The IMUGPS filename.
+    sensor_model_file: str
+        The sensor model filename.
+    dem_image_file: str
+        The DEM image filename.
+    boresight_options: list of boolean
+        Boresight offset options, true or false.
+    """
 
     if os.path.exists(boresight_file):
         logger.info('Write boresight data to %s.' %boresight_file)
@@ -142,25 +143,27 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
 
 def cost_fun(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem_image, dem_ulxy, dem_pixel_size, gcp_xyz, boresight_options):
     """ Cost function for boresight calibration.
-    Arguments:
-        boresight_offsets: list of float
-            Boresight offsets.
-        flight_xyz: 2D array
-            Flight x, y, z data, shape=(n_gcps, 3)
-        flight_imu: 2D
-            Flight roll, pitch, heading data, shape=(n_gcps, 3)
-        flight_sensor_model: 2D
-            Flight Sensor model data, shape=(n_gcps, 2)
-        dem_image: 2D array
-            DEM data.
-        dem_ulxy: list of float
-            Map coordinates of DEM upper-left corner.
-        dem_pixel_size: float
-            DEM pixel size.
-        gcp_xyz: 2D array
-            GPC map coordinates, shape=(n_gcps, 3).
-        boresight_options: list of boolean
-            Boresight offset options, true or false.
+
+    Parameters
+    ----------
+    boresight_offsets: list of float
+        Boresight offsets.
+    flight_xyz: 2D array
+        Flight x, y, z data, shape=(n_gcps, 3)
+    flight_imu: 2D
+        Flight roll, pitch, heading data, shape=(n_gcps, 3)
+    flight_sensor_model: 2D
+        Flight Sensor model data, shape=(n_gcps, 2)
+    dem_image: 2D array
+        DEM data.
+    dem_ulxy: list of float
+        Map coordinates of DEM upper-left corner.
+    dem_pixel_size: float
+        DEM pixel size.
+    gcp_xyz: 2D array
+        GPC map coordinates, shape=(n_gcps, 3).
+    boresight_options: list of boolean
+        Boresight offset options, true or false.
     """
 
     # Estimate GCP map coordinates.
@@ -173,26 +176,30 @@ def cost_fun(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem
 
 def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem_image, dem_ulxy, dem_pixel_size, boresight_options):
     """ Cestimate GCP map coordinates.
-    Arguments:
-        boresight_offsets: list of float
-            Boresight offsets.
-        flight_xyz: 2D array
-            Flight x, y, z data, shape=(n_gcps, 3)
-        flight_imu: 2D
-            Flight roll, pitch, heading data, shape=(n_gcps, 3)
-        flight_sensor_model: 2D
-            Flight Sensor model data, shape=(n_gcps, 2)
-        dem_image: 2D array
-            DEM data.
-        dem_ulxy: list of float
-            Map coordinates of DEM upper-left corner.
-        dem_pixel_size: float
-            DEM pixel size.
-        boresight_options: list of boolean
-            Boresight offset options, true or false.
-    Returns:
-        gcp_xyz: 2D array
-            Estimated GCP's x, y and z.
+
+    Parameters
+    ----------
+    boresight_offsets: list of float
+        Boresight offsets.
+    flight_xyz: 2D array
+        Flight x, y, z data, shape=(n_gcps, 3)
+    flight_imu: 2D
+        Flight roll, pitch, heading data, shape=(n_gcps, 3)
+    flight_sensor_model: 2D
+        Flight Sensor model data, shape=(n_gcps, 2)
+    dem_image: 2D array
+        DEM data.
+    dem_ulxy: list of float
+        Map coordinates of DEM upper-left corner.
+    dem_pixel_size: float
+        DEM pixel size.
+    boresight_options: list of boolean
+        Boresight offset options, true or false.
+
+    Returns
+    -------
+    gcp_xyz: 2D array
+        Estimated GCP's x, y and z.
     """
 
     from GeoReferencing import ray_tracing

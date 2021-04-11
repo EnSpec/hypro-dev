@@ -12,19 +12,23 @@ solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data
 
 def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distance, background_mask_file=None):
     """ Pre-classify the image.
-    Notes:
-        (1) The classification algorithm used here is from ATCOR.
-    Arguments:
-        pre_class_image_file: str
-            Pre-classification image filename.
-        rdn_image_file: str
-            Radiance image filename, either BIL or BSQ.
-        sun_zenith: float
-            Sun zenith angle in degrees.
-        distance: float
-            Sun-Earth distance.
-        background_mask_file: str
-            Background mask filename.
+
+    Notes
+    -----
+    (1) The classification algorithm used here is from ATCOR.
+
+    Parameters
+    ----------
+    pre_class_image_file: str
+        Pre-classification image filename.
+    rdn_image_file: str
+        Radiance image filename, either BIL or BSQ.
+    sun_zenith: float
+        Sun zenith angle in degrees.
+    distance: float
+        Sun-Earth distance.
+    background_mask_file: str
+        Background mask filename.
     """
 
     if os.path.exists(pre_class_image_file):
@@ -105,7 +109,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
             swir2_refl = rdn_image[swir2_band,:,:]*np.pi*d2/(solar_flux[swir2_band]*cos_sun_zenith)
         rdn_image.flush()
         del rdn_image
-        
+
         # Calculate NDSI.
         ndsi = (green_refl-swir1_refl)/(green_refl+swir1_refl+1e-10)
 
@@ -218,7 +222,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
             nir_refl = rdn_image[nir_band,:,:]*np.pi*d2/(solar_flux[nir_band]*cos_sun_zenith)
         rdn_image.flush()
         del rdn_image
-        
+
         # water
         water = nir_refl<0.05
 
@@ -279,7 +283,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
             swir2_refl = rdn_image[swir2_band,:,:]*np.pi*d2/(solar_flux[swir2_band]*cos_sun_zenith)
         rdn_image.flush()
         del rdn_image
-        
+
         # water
         water = swir1_refl<0.03
 
@@ -348,11 +352,11 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         pre_class_image[bg_mask_image] = 0
         bg_mask_image.flush()
         del bg_mask_image
-        
+
     # Clear data.
     pre_class_image.flush()
     del pre_class_image
-    
+
     # Write header.
     pre_class_header = empty_envi_header()
     pre_class_header['description'] = 'Pre-classification'

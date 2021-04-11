@@ -9,12 +9,16 @@ import gdal, os, osr, numpy as np
 
 def get_utm_zone(lon):
     """ Calculate UTM zone.
-    Arguments:
-        lon: float
-            Longitude, in degrees. West: negative, East: positive.
-    Returns:
-        zone: int
-            UTM zone number.
+
+    Parameters
+    ----------
+    lon: float
+        Longitude, in degrees. West: negative, East: positive.
+
+    Returns
+    -------
+    zone: int
+        UTM zone number.
     """
 
     zone = int(1+(lon+180.0)/6.0)
@@ -23,10 +27,15 @@ def get_utm_zone(lon):
 
 def is_northern(lat):
     """ Determine if it is northern hemisphere.
-    Arguments:
-        lat: float
-            Latitude, in degrees. Northern: positive, Southern: negative.
-    Returns:
+
+    Parameters
+    ----------
+    lat: float
+        Latitude, in degrees. Northern: positive, Southern: negative.
+
+    Returns
+    -------
+    int
         1: northern, 0: southern.
     """
 
@@ -37,14 +46,18 @@ def is_northern(lat):
 
 def define_utm_crs(lon, lat):
     """ Define a UTM map coordinate system.
-    Arguments:
-        lon: float
-            Longitude, in degrees. West: negative, East: positive.
-        lat: float
-            Latitude, in degrees. Northern: positive, Southern: negative.
-    Returns:
-        crs: osr.SpatialReference object
-            UTM map coordinate system.
+
+    Parameters
+    ----------
+    lon: float
+        Longitude, in degrees. West: negative, East: positive.
+    lat: float
+        Latitude, in degrees. Northern: positive, Southern: negative.
+
+    Returns
+    -------
+    crs: osr.SpatialReference object
+        UTM map coordinate system.
     """
 
     crs = osr.SpatialReference()
@@ -56,9 +69,11 @@ def define_utm_crs(lon, lat):
 
 def define_wgs84_crs():
     """ Define a WGS84 map coordinate system.
-    Returns:
-        crs: osr.SpatialReference object
-            WGS84 map coordinate system.
+
+    Returns
+    -------
+    crs: osr.SpatialReference object
+        WGS84 map coordinate system.
     """
 
     crs = osr.SpatialReference()
@@ -68,12 +83,16 @@ def define_wgs84_crs():
 
 def get_raster_crs(file):
     """ Get the map coordinate system of a raster image.
-    Arguments:
-        file: str
-            Georeferenced image filename.
-    Returns:
-        crs: osr object
-            Map coordinate system.
+
+    Parameters
+    ----------
+    file: str
+        Georeferenced image filename.
+
+    Returns
+    -------
+    crs: osr object
+        Map coordinate system.
     """
 
     ds = gdal.Open(file, gdal.GA_ReadOnly)
@@ -87,14 +106,18 @@ def get_raster_crs(file):
 
 def get_grid_convergence(lon, lat, map_crs):
     """ Get grid convergence angles.
-    Arguments:
-        lon: list of floats
-            Longitude. West: negative; East: positive.
-        lat: list of floats
-            Latitde. North: positive; South: negative.
-    Reuturns:
-        grid_convergence: array of floats
-            Grid convergence in degrees.
+
+    Parameters
+    ----------
+    lon: list of floats
+        Longitude. West: negative; East: positive.
+    lat: list of floats
+        Latitde. North: positive; South: negative.
+
+    Reuturns
+    --------
+    grid_convergence: array of floats
+        Grid convergence in degrees.
     """
 
     lon, lat = np.array(lon), np.array(lat)
@@ -123,18 +146,24 @@ def get_grid_convergence(lon, lat, map_crs):
 
 def get_map_crs(dem, longitude, latitude):
     """ Get map coordinate system.
-    Notes:
-        If `dem` is a file, the map coordinate system should be
-        the same as that of the dem file; otherwise define a UTM coordinate system
-        based on the longitude and latitude.
-    Arguments:
-        dem: str or float
-            DEM image filename, or user-specified DEM value.
-        longitude, latitude: float
-            Longitude and latitude.
-    Returns:
-        map_crs: osr object
-            Map coordinate system.
+
+    Notes
+    -----
+    If `dem` is a file, the map coordinate system should be
+    the same as that of the dem file; otherwise define a UTM coordinate system
+    based on the longitude and latitude.
+
+    Parameters
+    ----------
+    dem: str or float
+        DEM image filename, or user-specified DEM value.
+    longitude, latitude: float
+        Longitude and latitude.
+
+    Returns
+    -------
+    map_crs: osr object
+        Map coordinate system.
     """
 
     if os.path.isfile(dem):
@@ -146,21 +175,27 @@ def get_map_crs(dem, longitude, latitude):
 
 def get_sun_angles(longitude, latitude, utc_time):
     """ Calculate the Sun's position.
-    References:
-        (1) Manuel Blanco-Muriel, et al. (2001). Computing the solar vector. Solar Energy, 70(5), 431-441.
-        (2) The C code is available from: http://www.psa.es/sdg/sunpos.htm
-    Arguments:
-        longitude: float
-            Longitude, in degrees. West: negative, East: positive.
-        latitude: float
-            Latitude, in degrees. Northern: positive, Southern: negative.
-        utc_time: datetime object
-            UTC time.
-    Returns:
-        ZenithAngle: float
-            Sun zenith angle, in degrees.
-        AzimuthAngle: float
-            Sun azimuth angle, in degrees.
+
+    References
+    ----------
+    (1) Manuel Blanco-Muriel, et al. (2001). Computing the solar vector. Solar Energy, 70(5), 431-441.
+    (2) The C code is available from: http://www.psa.es/sdg/sunpos.htm
+
+    Parameters
+    ----------
+    longitude: float
+        Longitude, in degrees. West: negative, East: positive.
+    latitude: float
+        Latitude, in degrees. Northern: positive, Southern: negative.
+    utc_time: datetime object
+        UTC time.
+
+    Returns
+    -------
+    ZenithAngle: float
+        Sun zenith angle, in degrees.
+    AzimuthAngle: float
+        Sun azimuth angle, in degrees.
     """
 
     rad = np.pi/180

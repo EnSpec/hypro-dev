@@ -14,14 +14,14 @@
     within 960-2500 nm (spectral sampling = 5.45 nm). For more details about these cameras, please refer to
     https://www.hyspex.no/products/. The iTraceRT-F400 sensor records the attitudes (roll, pitch and heading angles)
     and positions (longitude, latitude and altitude) of airplanes.
-    
+
 (2) Geometric correction focuses on removing image geometric distortions mainly caused by
     platform motions, which can be characterized by roll, pitch and heading angles.
     We adapted the ray-tracing method proposed by Meyer P. (1994, Remote Sensing of Environment, vol: 49, 118-130)
     to calculate the map coordinates (easting, northing and elevation) of each raw image pixel (a process called geo-referencing).
     Then, the `warp` tool provided by GDAL (Geospatial Data Abstraction Library) was used to resample the raw image
     to regular map grids (a process called geo-rectification).
-    
+
 (3) Radiometric correction focuses on reducing radiometric distortions mainly caused by
     sensor smile effects (shifts in sensor center wavelengths and Full-Width-at-Half-Maximum (FWHM))
     and atmospheric effects (absorptions and scatterings). The spectral matching method proposed by
@@ -43,7 +43,7 @@
     4) DEM;
     5) Hyspex lab radiometric re-calibration data provided by NEO (optional);
     6) Ground control points data (optional).
-    
+
     The output dataset of HyspexPro includes:
     1) Hyspex ground surface reflectance images;
     2) View angles (zenith and azimuth);
@@ -139,12 +139,16 @@ from AtmCorr          import atm_corr_image
 
 def get_flight_indices(config):
     """ Get Hyspex flight indices.
-    Arguments:
-        config: dict
-            Configurations.
-    Returns:
-        flight_indicies: list of strs
-            Flight indices.
+
+    Parameters
+    ----------
+    config: dict
+        Configurations.
+
+    Returns
+    -------
+    flight_indicies: list of strs
+        Flight indices.
     """
 
     sensor_name = config['Sensors'][list(config['Sensors'].keys())[0]]['id']
@@ -161,14 +165,18 @@ def get_flight_indices(config):
 
 def create_flight_log(output_dir, log_file_basename):
     """ Create a Hyspex flight processing log.
-    Arguments:
-        output_dir: str
-            Output directory.
-        log_file_basename: str
-            Log file basename.
-    Returns:
-        flight_log: logging object
-            Flight log.
+
+    Parameters
+    ----------
+    output_dir: str
+        Output directory.
+    log_file_basename: str
+        Log file basename.
+
+    Returns
+    -------
+    flight_log: logging object
+        Flight log.
     """
 
     log_file = os.path.join(output_dir, '%s.log' %log_file_basename)
@@ -183,14 +191,18 @@ def create_flight_log(output_dir, log_file_basename):
 
 def initialize_flight_dict(config, flight_index):
     """ Initialize a Hyspex flight dictionary.
-    Arguments:
-        config: dict
-            User-defined configurations.
-        flight_index: str
-            Flight index.
-    Returns:
-        flight_dict: dict
-            Flight dictionary.
+
+    Parameters
+    ----------
+    config: dict
+        User-defined configurations.
+    flight_index: str
+        Flight index.
+
+    Returns
+    -------
+    flight_dict: dict
+        Flight dictionary.
     """
 
     # flight dictionary
@@ -268,14 +280,18 @@ def initialize_flight_dict(config, flight_index):
 
 def search_file(in_dir, keyword):
     """ Search a specific file with the keyword.
-    Arguments:
-        in_dir: str
-            Hyspex data input directory.
-        keyword: str
-            Searching keyword.
-    Returns:
-        file: str
-            Found filename.
+
+    Parameters
+    ----------
+    in_dir: str
+        Hyspex data input directory.
+    keyword: str
+        Searching keyword.
+
+    Returns
+    -------
+    file: str
+        Found filename.
     """
 
     file = glob.glob(os.path.join(in_dir, keyword))
@@ -289,12 +305,16 @@ def search_file(in_dir, keyword):
 
 def get_center_lon_lat(raw_imugps_file):
     """ Get Hyspex image center longitude and latitude.
-    Arguments:
-        raw_imugps_file: str
-            Hyspex raw imugps filename.
-    Returns:
-        [lon, lat]: list of floats
-            Image center longitude and latitude.
+
+    Parameters
+    ----------
+    raw_imugps_file: str
+        Hyspex raw imugps filename.
+
+    Returns
+    -------
+    [lon, lat]: list of floats
+        Image center longitude and latitude.
     """
 
     import numpy as np
@@ -307,16 +327,22 @@ def get_center_lon_lat(raw_imugps_file):
 
 def get_acquisition_time(dn_header_file, raw_imugps_file):
     """ Get Hyspex image acquistion time.
-    Notes:
-        (1) This code is adapted from Brendan Heberlein (bheberlein@wisc.edu).
-    Arguments:
-        header_file: str
-            Hyspex DN image header filename.
-        imugps_file: str
-            Hyspex raw imugps filename.
-    Returns:
-        when: datetime object
-            Image acquisition time.
+
+    Notes
+    -----
+    (1) This code is adapted from Brendan Heberlein (bheberlein@wisc.edu).
+
+    Parameters
+    ----------
+    header_file: str
+        Hyspex DN image header filename.
+    imugps_file: str
+        Hyspex raw imugps filename.
+
+    Returns
+    -------
+    when: datetime object
+        Image acquisition time.
     """
 
     from datetime import datetime, timedelta
@@ -336,12 +362,16 @@ def get_acquisition_time(dn_header_file, raw_imugps_file):
 
 def get_sun_earth_distance(when):
     """ Get sun-earth distance of a day.
-    Arguments:
-        when: datetime object
-            Date and time.
-    Returns:
-        d: float
-            Sun-Earth distance.
+
+    Parameters
+    ----------
+    when: datetime object
+        Date and time.
+
+    Returns
+    -------
+    d: float
+        Sun-Earth distance.
     """
 
     import numpy as np
@@ -349,13 +379,13 @@ def get_sun_earth_distance(when):
     d = np.loadtxt(os.path.join(cur_dir, 'data/sun-earth-distance.dat'))
     doy = when.timetuple().tm_yday
     d = d[doy-1]
-    
+
     return d
 
 def HyspexPro(config_file):
     # Load configurations.
     config = json.load(open(config_file, 'r'))
-    
+
     # Make an output directory.
     if not os.path.exists(config['Data']['output_dir']):
         os.mkdir(config['Data']['output_dir'])

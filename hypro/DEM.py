@@ -10,14 +10,20 @@ logger = logging.getLogger(__name__)
 
 def get_avg_elev(dem_image_file):
     """ Get the average elevation of a DEM image.
-    Notes:
-        Pixels with a negative elevation are excluded from averaging.
-    Arguments:
-        dem_image_file: str
-            DEM image filename.
-    Returns:
-        avg_elev: float
-            Average elevation.
+
+    Notes
+    -----
+    Pixels with a negative elevation are excluded from averaging.
+
+    Parameters
+    ----------
+    dem_image_file: str
+        DEM image filename.
+
+    Returns
+    -------
+    avg_elev: float
+        Average elevation.
     """
 
     ds = gdal.Open(dem_image_file, gdal.GA_ReadOnly)
@@ -30,19 +36,21 @@ def get_avg_elev(dem_image_file):
 
 def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
     """ Prepare DEM data.
-    Arguments:
-        dem_image_file: str
-            Processed DEM image filename.
-        dem: str or float
-            Input DEM image filename, or user-specified elevation value [m].
-        imugps_file: str
-            IMUGPS data filename.
-        fov: float
-            Sensor field of view [deg].
-        map_crs: osr object
-            Map coordinate system.
-        pixel_size: float
-            Image pixel size [deg].
+
+    Parameters
+    ----------
+    dem_image_file: str
+        Processed DEM image filename.
+    dem: str or float
+        Input DEM image filename, or user-specified elevation value [m].
+    imugps_file: str
+        IMUGPS data filename.
+    fov: float
+        Sensor field of view [deg].
+    map_crs: osr object
+        Map coordinate system.
+    pixel_size: float
+        Image pixel size [deg].
     """
 
     if os.path.exists(dem_image_file):
@@ -67,15 +75,15 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
     y_min = imugps[:,2].min()-half_swath-buffer
     y_max = imugps[:,2].max()+half_swath+buffer
     del imugps, half_swath, altitude, buffer
-    
+
     # Process DEM.
     if type(dem) is str: # If `old_dem` is a file, then clip it to the flight area.
         # Read raw DEM.
         ds = gdal.Open(dem, gdal.GA_ReadOnly)
-        
+
         # Get image rows and columns.
         geotransform = ds.GetGeoTransform()
-        
+
         col_0 = int((x_min-geotransform[0])/geotransform[1])
         col_1 = int((x_max-geotransform[0])/geotransform[1])
         row_0 = int((y_max-geotransform[3])/geotransform[5])
@@ -84,7 +92,7 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
         if (col_0>ds.RasterXSize-1) or (row_0>ds.RasterYSize-1) or (col_1<0) or (row_1<0):
             logger.error('The input DEM image does not cover the flight area.')
             raise IOError('The input DEM image does not cover the flight area.')
-        
+
         col_0 = max(col_0, 0)
         row_0 = max(row_0, 0)
         col_1 = min(col_1, ds.RasterXSize-1)

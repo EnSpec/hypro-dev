@@ -111,12 +111,16 @@ envi_fields = ['description',
 
 def read_envi_header(file):
     """ Read ENVI header.
-    Arguments:
-        file: str
-            ENVI header filename.
-    Returns:
-        header: dict
-            ENVI header.
+
+    Parameters
+    ----------
+    file: str
+        ENVI header filename.
+
+    Returns
+    -------
+    header: dict
+        ENVI header.
     """
 
     header = empty_envi_header()
@@ -158,10 +162,13 @@ def read_envi_header(file):
 
 def check_envi_required_fields(header):
     """ Check ENVI required fields.
-    Arguments:
-        header: dict
-            ENVI header.
+
+    Parameters
+    ----------
+    header: dict
+        ENVI header.
     """
+
     required_fields = ['byte order',
                        'data type',
                        'interleave',
@@ -174,9 +181,11 @@ def check_envi_required_fields(header):
 
 def empty_envi_header():
     """ Generate an empty ENVI header.
-    Returns:
-        header: dict
-            Empty ENVI header.
+
+    Returns
+    -------
+    header: dict
+        Empty ENVI header.
     """
 
     header = dict()
@@ -187,11 +196,13 @@ def empty_envi_header():
 
 def write_envi_header(file, header):
     """ Write ENVI header.
-    Arguments:
-        file: str
-            ENVI header filename.
-        header: dict
-            ENVI header.
+
+    Parameters
+    ----------
+    file: str
+        ENVI header filename.
+    header: dict
+        ENVI header.
     """
 
     header = deepcopy(header)

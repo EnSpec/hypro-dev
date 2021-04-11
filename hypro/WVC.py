@@ -11,15 +11,17 @@ solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data
 
 def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):
     """ Build water vapor models.
-    Arguments:
-        wvc_model_file: str
-            Water vapor column model filename.
-        atm_lut_file: str
-            Atmosphere lookup table file.
-        rdn_header_file: str
-            Radiance header filename.
-        vis: float
-            Visibility in [km].
+
+    Parameters
+    ----------
+    wvc_model_file: str
+        Water vapor column model filename.
+    atm_lut_file: str
+        Atmosphere lookup table file.
+    rdn_header_file: str
+        Radiance header filename.
+    vis: float
+        Visibility in [km].
     """
 
     if os.path.exists(wvc_model_file):
@@ -59,7 +61,7 @@ def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):
     atm_lut_rdn = atm_lut[1,:,vza_index,raa_index,:] - atm_lut[0,:,vza_index,raa_index,:] # dimesion=[WVC, VIS, WAVE]
     atm_lut.flush()
     del atm_lut
-    
+
     # vis intepolation range
     vis_dict = get_interp_range(atm_lut_VIS, vis)
 
@@ -118,19 +120,21 @@ def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):
 
 def estimate_wvc(wvc_file, rdn_file, sensors, sun_zenith, distance, background_mask_file):
     """ Estimate water vapor column.
-    Arguments:
-        wvc_file: str
-            Water vapor column image filename.
-        rdn_file: str
-            Radiance image filename.
-        sensors: dict
-             Sensors.
-        mask_file: str
-            Mask image filename.
-        sun_zenith: float
-            Sun zenith angle.
-        distance: float
-            Earth-to-sun distance.
+
+    Parameters
+    ----------
+    wvc_file: str
+        Water vapor column image filename.
+    rdn_file: str
+        Radiance image filename.
+    sensors: dict
+         Sensors.
+    mask_file: str
+        Mask image filename.
+    sun_zenith: float
+        Sun zenith angle.
+    distance: float
+        Earth-to-sun distance.
     """
 
     if os.path.exists(wvc_file):
@@ -209,7 +213,7 @@ def estimate_wvc(wvc_file, rdn_file, sensors, sun_zenith, distance, background_m
         del ratio_image, bands, wvc_model
     rdn_image.flush()
     del rdn_image
-    
+
     # Average.
     wvc_image /= len(sensors)
 

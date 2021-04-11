@@ -9,17 +9,19 @@ import logging, os, numpy as np
 logger = logging.getLogger(__name__)
 def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensors):
     """ Merge DEM and SCA images.
-    Arguments:
-        background_mask_file: str
-            Background mask filename.
-        merged_dem_file: str
-            Merged DEM file.
-        merged_sca_file: str
-            Merged SCA file.
-        sensors: dict
-            Sensor dictionaries.
+
+    Parameters
+    ----------
+    background_mask_file: str
+        Background mask filename.
+    merged_dem_file: str
+        Merged DEM file.
+    merged_sca_file: str
+        Merged SCA file.
+    sensors: dict
+        Sensor dictionaries.
     """
-    
+
     if os.path.exists(background_mask_file) and os.path.exists(merged_dem_file) and os.path.exists(merged_sca_file):
         logger.info('Write the background mask to %s.' %background_mask_file)
         logger.info('Write the merged DEM image to %s.' %merged_dem_file)
@@ -64,7 +66,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     """
     x, y = np.meshgrid(np.arange(ulx, lrx, pixel_size), np.arange(uly, lry, -pixel_size))
     mask = np.full(x.shape, True, dtype='bool')
-    
+
     """
         Build a background mask.
     """
@@ -81,7 +83,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
         tmp_pixel_size = float(tmp_header['map info'][5])
         resampled_image = resample_ortho_dem(np.copy(tmp_image), tmp_ulx, tmp_uly, tmp_pixel_size, x, y)
         mask = mask&(resampled_image>0.0)
-        
+
         # Use sca.
         tmp_header = read_envi_header(os.path.splitext(sensor_dict['ortho_sca_image_file'])[0]+'.hdr')
         tmp_image = np.memmap(sensor_dict['ortho_sca_image_file'],
@@ -92,14 +94,14 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
                                      tmp_header['samples']))
         tmp_ulx, tmp_uly = float(tmp_header['map info'][3]), float(tmp_header['map info'][4])
         tmp_pixel_size = float(tmp_header['map info'][5])
-        resampled_image = resample_ortho_sca(np.copy(tmp_image[0,:,:]), tmp_ulx, tmp_uly, tmp_pixel_size, x, y) 
+        resampled_image = resample_ortho_sca(np.copy(tmp_image[0,:,:]), tmp_ulx, tmp_uly, tmp_pixel_size, x, y)
         mask = mask&(resampled_image>0.0)
 
         # Clear data.
         del tmp_header, tmp_ulx, tmp_uly, tmp_pixel_size, resampled_image
         tmp_image.flush()
         del tmp_image
-        
+
     mask = ~mask # 1: background pixels; 0: non-background pixels.
 
     # Write the mask to a file.
@@ -151,7 +153,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     del raw_header, sensor_index, sensor_dict, resampled_image
     raw_image.flush()
     del raw_image
-    
+
     # Write the merged DEM header to a file.
     header = empty_envi_header()
     header['description'] = 'Merged DEM, in [m]'
@@ -201,7 +203,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     del sensor_index, sensor_dict
     raw_image.flush()
     del raw_image
-    
+
     # Write header.
     header = empty_envi_header()
     header['description'] = 'Merged SCA, in [deg]'
@@ -225,13 +227,15 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
 
 def merge_rdn(merged_image_file, mask_file, sensors):
     """ Merge radiance images.
-    Arguments:
-        merged_image_file: str
-            Merged radiance image filename.
-        mask_file: str
-            Background mask filename.
-        sensors: dict
-            Sensor dictionaries.
+
+    Parameters
+    ----------
+    merged_image_file: str
+        Merged radiance image filename.
+    mask_file: str
+        Background mask filename.
+    sensors: dict
+        Sensor dictionaries.
     """
 
     if os.path.exists(merged_image_file):
@@ -267,7 +271,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
         header_dict[sensor_index] = tmp_header
         image_file_dict[sensor_index] = sensor_dict['ortho_rdn_image_file']
     bands_waves_fwhms.sort(key = lambda x: x[1])
-    
+
     # Merge images.
     wavelengths = []
     fwhms = []
@@ -280,12 +284,12 @@ def merge_rdn(merged_image_file, mask_file, sensors):
         fwhms.append(v[2])
         header = header_dict[sensor_index]
         image_file = image_file_dict[sensor_index]
-        
+
         # Write image.
         if ((v[1]>=1339.0)&(v[1]<=1438.0))|((v[1]>=1808.0)&(v[1]<=1978.0))|(v[1]>=2467.0):
             resampled_image = np.zeros(x.shape)
         else:
-            offset = header['header offset']+4*band*header['lines']*header['samples']# in bytes      
+            offset = header['header offset']+4*band*header['lines']*header['samples']# in bytes
             rdn_image = np.memmap(image_file,
                                   dtype='float32',
                                   mode='r',
@@ -299,14 +303,14 @@ def merge_rdn(merged_image_file, mask_file, sensors):
             resampled_image[mask_image] = 0.0
             rdn_image.flush()
             del rdn_image
-            
+
         fid.write(resampled_image.astype('float32').tostring())
         del resampled_image
     fid.close()
     del header_dict, image_file_dict, x, y
     mask_image.flush()
     del mask_image
-    
+
     # Write header.
     header = empty_envi_header()
     header['description'] = 'Merged radiance, in [mW/(cm2*um*sr)]'
@@ -328,21 +332,25 @@ def merge_rdn(merged_image_file, mask_file, sensors):
     del header, tmp_header
 
     logger.info('Write the merged refletance image to %s.' %merged_image_file)
-    
+
 def resample_ortho_sca(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     """ Resample geosca image to new map grids.
-    Arguments:
-        raw_image: 2D array
-            Raw geosca image data.
-        raw_ulx, raw_uly: float
-            Map coordinates of the upper-left corner of the raw image.
-        raw_pixel_size: float
-            Pixel size of the raw image.
-        x, y: 2D array
-            New map grids.
-    Returns:
-        resampled_image: 2D array
-            Resampled geosca image.
+
+    Parameters
+    ----------
+    raw_image: 2D array
+        Raw geosca image data.
+    raw_ulx, raw_uly: float
+        Map coordinates of the upper-left corner of the raw image.
+    raw_pixel_size: float
+        Pixel size of the raw image.
+    x, y: 2D array
+        New map grids.
+
+    Returns
+    -------
+    resampled_image: 2D array
+        Resampled geosca image.
     """
 
     from scipy import ndimage
@@ -367,18 +375,22 @@ def resample_ortho_sca(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
 
 def resample_ortho_dem(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     """ Resample dem image to new map grids.
-    Arguments:
-        raw_image: 2D array
-            Raw ortho dem image data.
-        raw_ulx, raw_uly: float
-            Map coordinates of the upper-left corner of the raw image.
-        raw_pixel_size: float
-            Pixel size of the raw image.
-        x, y: 2D array
-            New map grids.
-    Returns:
-        resampled_image: 2D array
-            Resampled geodem image.
+
+    Parameters
+    ----------
+    raw_image: 2D array
+        Raw ortho dem image data.
+    raw_ulx, raw_uly: float
+        Map coordinates of the upper-left corner of the raw image.
+    raw_pixel_size: float
+        Pixel size of the raw image.
+    x, y: 2D array
+        New map grids.
+
+    Returns
+    -------
+    resampled_image: 2D array
+        Resampled geodem image.
     """
 
     from scipy import ndimage
@@ -403,18 +415,22 @@ def resample_ortho_dem(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
 
 def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     """ Resample radiance image to new map grids.
-    Arguments:
-        raw_image: 2D array
-            Radiance image data.
-        raw_ulx, raw_uly: float
-            Map coordinates of the upper-left corner of the raw image.
-        raw_pixel_size: float
-            Pixel size of the raw image.
-        x, y: 2D array
-            New map grids.
-    Returns:
-        resampled_image: 2D array
-            Resampled refletance image.
+
+    Parameters
+    ----------
+    raw_image: 2D array
+        Radiance image data.
+    raw_ulx, raw_uly: float
+        Map coordinates of the upper-left corner of the raw image.
+    raw_pixel_size: float
+        Pixel size of the raw image.
+    x, y: 2D array
+        New map grids.
+
+    Returns
+    -------
+    resampled_image: 2D array
+        Resampled refletance image.
     """
 
     from scipy import ndimage
@@ -433,5 +449,5 @@ def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     lines = ((raw_uly-y)/raw_pixel_size).astype('int32')
     resampled_image = avg_image[lines, samples]
     del avg_image, samples, lines, raw_image
-    
+
     return resampled_image

@@ -21,9 +21,11 @@ atm_db_RAA = np.array([0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180])
 
 def build_atm_lut(flight_dict):
     """ Make an atmospheric lookup table.
-    Arguments:
-        flight_dict: dict
-            Flight configurations.
+
+    Parameters
+    ----------
+    flight_dict: dict
+        Flight configurations.
     """
 
     from DEM  import get_avg_elev
@@ -55,7 +57,7 @@ def build_atm_lut(flight_dict):
     del atm_db_folders, folder
     atm_db_ELEV = sorted(list(set(atm_db_ELEV))) # Remove duplicates, and sort values;
     atm_db_ZOUT = sorted(list(set(atm_db_ZOUT))) # Remove duplicates, and sort values;
-    
+
     # Get the elevation interpolation range.
     if np.all(np.array(atm_db_ELEV)<atm_lut_elev) or np.all(np.array(atm_db_ELEV)>atm_lut_elev):
         raise IOError('The above-sea-level elevation (%.2f) is out of range (%.2f - %.2f).' %(atm_lut_elev, min(atm_db_ELEV), max(atm_db_ELEV)))
@@ -70,7 +72,7 @@ def build_atm_lut(flight_dict):
     if np.all(np.array(atm_db_SZA)<atm_lut_sza) or np.all(np.array(atm_db_SZA)>atm_lut_sza):
         raise IOError('The sun zenith angle (%.2f) is out of range (%.2f - %.2f).' %(atm_lut_sza, min(atm_db_SZA), max(atm_db_SZA)))
     sza_dict = get_interp_range(atm_db_SZA, atm_lut_sza)
-    
+
     # Print out interpolation ranges.
     logger.info('Atmospheric database interpolation point and range:')
     index = list(elev_dict.keys())
@@ -79,7 +81,7 @@ def build_atm_lut(flight_dict):
     logger.info('ZOUT [km] = %.2f, %.2f - %.2f' %(atm_lut_zout, atm_db_ZOUT[index[0]], atm_db_ZOUT[index[1]]))
     index = list(sza_dict.keys())
     logger.info('SZA [deg] = %.2f, %.2f - %.2f' %(atm_lut_sza, atm_db_SZA[index[0]], atm_db_SZA[index[1]]))
-    
+
     # Initialize the atmosphere lookup table.
     atm_lut = np.memmap(flight_dict['raw_atm_lut_file'],
                         dtype='float32',
@@ -126,7 +128,7 @@ def build_atm_lut(flight_dict):
     atm_lut /= ((flight_dict['sun_earth_distance']**2)*10.0)
     atm_lut.flush()
     del atm_lut
-    
+
     # Write the metadata of the atmosphere lookup table.
     atm_lut_metadata = dict()
     atm_lut_metadata['description'] = 'Raw atmospheric lookup table radiance [mW/(cm2*um*sr)]'
@@ -150,13 +152,15 @@ def build_atm_lut(flight_dict):
 
 def resample_atm_lut(resampled_atm_lut_file, raw_atm_lut_file, rdn_header_file):
     """ Resample atmosphere lookup table radiance to sensor wavelengths.
-    Arguments:
-        resampled_atm_lut_file: str
-            Resampled atmosphere lookup table filename.
-        raw_atm_lut_file: str
-            Raw atmosphere lookup table filename.
-        rdn_header_file: str
-            Radiance header filename.
+
+    Parameters
+    ----------
+    resampled_atm_lut_file: str
+        Resampled atmosphere lookup table filename.
+    raw_atm_lut_file: str
+        Raw atmosphere lookup table filename.
+    rdn_header_file: str
+        Radiance header filename.
     """
 
     if os.path.exists(resampled_atm_lut_file):
@@ -212,11 +216,13 @@ def resample_atm_lut(resampled_atm_lut_file, raw_atm_lut_file, rdn_header_file):
 
 def write_binary_metadata(metadata_file, metadata):
     """ Write the metadata of a binary file.
-    Arguments:
-        metadata_file: str
-            Metadata filename.
-        metadata: dict
-            Metadata.
+
+    Parameters
+    ----------
+    metadata_file: str
+        Metadata filename.
+    metadata: dict
+        Metadata.
     """
 
     fid = open(metadata_file, 'w')
@@ -238,12 +244,16 @@ def write_binary_metadata(metadata_file, metadata):
 
 def read_binary_metadata(metadata_file):
     """ Read the metadata of a binary file.
-    Arguments:
-        metadata_file: str
-            Metadata filename.
-    Returns:
-        metadata: dict
-            Metadata.
+
+    Parameters
+    ----------
+    metadata_file: str
+        Metadata filename.
+
+    Returns
+    -------
+    metadata: dict
+        Metadata.
     """
 
     fid = open(metadata_file, 'r')
@@ -273,8 +283,7 @@ def read_binary_metadata(metadata_file):
     return metadata
 
 def get_interp_range(xs, x):
-    """ Get the interpolation range.
-    """
+    """ Get the interpolation range. """
 
     x_index0 = np.where(xs<=x)[0][-1]
     x_index1 = np.where(xs>x)[0][0]
@@ -285,9 +294,11 @@ def get_interp_range(xs, x):
 
 def combos(indices):
     """ Return all combinations of indices in a list of index sublists.
-    Arguments:
-        indices: list of int lists
-            List of index lists.
+
+    Parameters
+    ----------
+    indices: list of int lists
+        List of index lists.
     """
 
     import itertools
