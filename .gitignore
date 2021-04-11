@@ -1,0 +1,4 @@
+.DS_Store
+
+# Ignore pycached files
+hypro/__pycache__/*.pyc
