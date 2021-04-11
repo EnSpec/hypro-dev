@@ -2,3 +2,12 @@
 
 # Ignore pycached files
 hypro/__pycache__/*.pyc
+
+# Ignore generated documentation
+docs/*
+
+# But keep sphinx core files
+!docs/Makefile
+!docs/make.bat
+!docs/source/conf.py
+!docs/source/index.rst
