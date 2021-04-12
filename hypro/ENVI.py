@@ -113,6 +113,7 @@ envi_fields = ['description',
                'z plot range',
                'z plot titles']
 
+
 def read_envi_header(file):
     """ Read ENVI header.
 
@@ -164,6 +165,7 @@ def read_envi_header(file):
 
     return header
 
+
 def check_envi_required_fields(header):
     """ Check ENVI required fields.
 
@@ -183,6 +185,7 @@ def check_envi_required_fields(header):
         if header[field] is None:
             raise ValueError('No value for %s!' %field)
 
+
 def empty_envi_header():
     """ Generate an empty ENVI header.
 
@@ -197,6 +200,7 @@ def empty_envi_header():
         header[key] = None
 
     return header
+
 
 def write_envi_header(file, header):
     """ Write ENVI header.

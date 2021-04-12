@@ -9,9 +9,14 @@
 
 """ Functions to estimate water vapor column. """
 
-import logging, os, numpy as np
+import os
+import logging
+
+import numpy as np
+
 logger = logging.getLogger(__name__)
 solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data','solar_flux.dat')
+
 
 def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):
     """ Build water vapor models.
@@ -121,6 +126,7 @@ def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):
     with open(wvc_model_file, 'w') as fid:
         json.dump(wvc_model, fid, indent=4)
     logger.info('Write WVC models to %s.' %wvc_model_file)
+
 
 def estimate_wvc(wvc_file, rdn_file, sensors, sun_zenith, distance, background_mask_file):
     """ Estimate water vapor column.

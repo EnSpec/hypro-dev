@@ -15,9 +15,12 @@
         https://github.com/EnSpec/HyTools-sandbox/blob/master/hytools/preprocess/resampling.py
 """
 
-import numpy as np
 import warnings
+
+import numpy as np
+
 warnings.filterwarnings("ignore", category=FutureWarning)
+
 
 def estimate_fwhms_from_waves(waves):
     """ Estimate fwhm from wavelengths.
@@ -39,6 +42,7 @@ def estimate_fwhms_from_waves(waves):
 
     return fwhms
 
+
 def gaussian(x, mu, fwhm):
     """ Return a gaussian distribution.
 
@@ -59,6 +63,7 @@ def gaussian(x, mu, fwhm):
     sigma = fwhm/(2*np.sqrt(2*np.log(2)))+1e-10
 
     return np.exp(-1*((x-mu)**2/(2*sigma**2)))/(sigma*np.sqrt(2*np.pi))
+
 
 def resample_spectra(spectra, src_waves, dst_waves, dst_fwhms, src_fwhms=None):
     """ Return a set of coeffiencients for spectrum resampling.
@@ -123,6 +128,7 @@ def resample_spectra(spectra, src_waves, dst_waves, dst_fwhms, src_fwhms=None):
 
     return resampled_spectra
 
+
 def get_closest_wave(waves, center_wave):
     """ Get the band index whose wavelength is closest to `center_wav`.
 
@@ -142,6 +148,7 @@ def get_closest_wave(waves, center_wave):
     band_index = np.argmin(np.abs(np.array(waves)-center_wave))
 
     return waves[band_index], band_index
+
 
 def continuum_removal(spectra, waves):
     """Continuum remove spectra.
@@ -164,6 +171,7 @@ def continuum_removal(spectra, waves):
     cont_rmd_spectra = spectra/(interp_spectra+1e-10)
 
     return cont_rmd_spectra
+
 
 def resample_solar_flux(solar_flux_file, sensor_waves, sensor_fwhms):
     """ Resample solar flux to sensor wavelengths.

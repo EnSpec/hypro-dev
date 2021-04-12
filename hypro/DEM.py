@@ -9,9 +9,14 @@
 
 """ Functions to process DEM data. """
 
+import os
+import logging
+
+import numpy as np
 from osgeo import gdal
-import logging, os, numpy as np
+
 logger = logging.getLogger(__name__)
+
 
 def get_avg_elev(dem_image_file):
     """ Get the average elevation of a DEM image.
@@ -38,6 +43,7 @@ def get_avg_elev(dem_image_file):
     del dem_image
 
     return avg_elev
+
 
 def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
     """ Prepare DEM data.

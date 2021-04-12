@@ -9,8 +9,11 @@
 
 """ Functions to process map coordinate systems. """
 
+import os
+
+import numpy as np
 from osgeo import gdal, osr
-import os, numpy as np
+
 
 def get_utm_zone(lon):
     """ Calculate UTM zone.
@@ -30,6 +33,7 @@ def get_utm_zone(lon):
 
     return zone
 
+
 def is_northern(lat):
     """ Determine if it is northern hemisphere.
 
@@ -48,6 +52,7 @@ def is_northern(lat):
         return 0
     else:
         return 1
+
 
 def define_utm_crs(lon, lat):
     """ Define a UTM map coordinate system.
@@ -72,6 +77,7 @@ def define_utm_crs(lon, lat):
 
     return crs
 
+
 def define_wgs84_crs():
     """ Define a WGS84 map coordinate system.
 
@@ -85,6 +91,7 @@ def define_wgs84_crs():
     crs.SetWellKnownGeogCS("WGS84")
 
     return crs
+
 
 def get_raster_crs(file):
     """ Get the map coordinate system of a raster image.
@@ -108,6 +115,7 @@ def get_raster_crs(file):
     crs.ImportFromWkt(prj)
 
     return crs
+
 
 def get_grid_convergence(lon, lat, map_crs):
     """ Get grid convergence angles.
@@ -149,6 +157,7 @@ def get_grid_convergence(lon, lat, map_crs):
 
     return grid_convergence
 
+
 def get_map_crs(dem, longitude, latitude):
     """ Get map coordinate system.
 
@@ -177,6 +186,7 @@ def get_map_crs(dem, longitude, latitude):
         map_crs = define_utm_crs(longitude, latitude)
 
     return map_crs
+
 
 def get_sun_angles(longitude, latitude, utc_time):
     """ Calculate the Sun's position.

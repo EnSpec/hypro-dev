@@ -9,7 +9,11 @@
 
 """ Functions to detect smile effects. """
 
-import logging, os, numpy as np
+import os
+import logging
+
+import numpy as np
+
 logger = logging.getLogger(__name__)
 
 # Define atmosphere absorption features.
@@ -30,6 +34,7 @@ absorption_features = {429:  [424, 437],
                        2317: [2300, 2330],
                        2420: [2400, 2435]
                        }
+
 
 def detect_smile_effect(sensor_dict, atm_lut_file):
     """ Detect smile effect.
@@ -232,6 +237,7 @@ def detect_smile_effect(sensor_dict, atm_lut_file):
 
     logger.info('Write smile effect to %s.' %sensor_dict['smile_effect_file'])
 
+
 def interp_atm_lut(atm_lut_file, WVC, VIS, VZA, RAA):
     """ Interpolate atmosphere look-up-table to different water vapor columns (WVC),
         visibilities (VIS), view zenith angles (VZA) and relative azimuth angles (RAA).
@@ -295,6 +301,7 @@ def interp_atm_lut(atm_lut_file, WVC, VIS, VZA, RAA):
     del atm_lut
 
     return atm_lut_WAVE, interp_rdn
+
 
 def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_file):
     """ Average radiance along each column.
@@ -407,6 +414,7 @@ def average_rdn(avg_rdn_file, rdn_image_file, sca_image_file, pre_class_image_fi
 
     logger.info('Write the averaged radiance data to %s.' %avg_rdn_file)
 
+
 def interpolate_values(A, map):
     """ Replace array elements with interpolated values. Input array is modified in-place.
 
@@ -420,6 +428,7 @@ def interpolate_values(A, map):
 
     def indices(x): return x.nonzero()[0]
     A[map] = np.interp(indices(map), indices(~map), A[~map])
+
 
 def cost_fun(shifts, sensor_wave, sensor_fwhm, sensor_rdn, lut_wave, lut_rdn):
     """ Cost function.

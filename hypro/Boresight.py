@@ -9,8 +9,13 @@
 
 """ Functions to do boresight calibration. """
 
-import logging, os, numpy as np
+import os
+import logging
+
+import numpy as np
+
 logger = logging.getLogger(__name__)
+
 
 def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_file, dem_image_file, boresight_options):
     """ Do boresight calibration.
@@ -145,6 +150,7 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
 
     logger.info('Write boresight data to %s.' %boresight_file)
 
+
 def cost_fun(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem_image, dem_ulxy, dem_pixel_size, gcp_xyz, boresight_options):
     """ Cost function for boresight calibration.
 
@@ -177,6 +183,7 @@ def cost_fun(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem
     cost = np.sum((est_gcp_xyz[:,:2]-gcp_xyz[:,:2])**2)
 
     return cost
+
 
 def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem_image, dem_ulxy, dem_pixel_size, boresight_options):
     """ Cestimate GCP map coordinates.

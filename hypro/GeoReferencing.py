@@ -9,12 +9,19 @@
 
 """ Functions to do geo-referencing. """
 
-from osgeo import gdal
-import logging, os, numpy as np
-logger = logging.getLogger(__name__)
-from numba import guvectorize, jit
+import os
+import logging
 import warnings
+
+import numpy as np
+from osgeo import gdal
+from numba import guvectorize, jit
+
+
+logger = logging.getLogger(__name__)
+
 warnings.filterwarnings("ignore")
+
 
 def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file, boresight_options):
     """ Create an input geometry (IGM) image.
@@ -137,6 +144,7 @@ def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file
 
     logger.info('Write the IGM to %s.' %igm_image_file)
 
+
 def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
     """ Create a scan angle (SCA) image.
 
@@ -222,6 +230,7 @@ def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
     del sca_header
 
     logger.info('Write the SCA to %s.' %sca_image_file)
+
 
 def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     """ Create a geographic lookup table (GLT) image.
@@ -417,6 +426,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
 
     logger.info('Write the GLT to %s.' %glt_image_file)
 
+
 def get_scan_vectors(imu, sensor_model):
     """ Get scan vectors.
 
@@ -507,6 +517,7 @@ def get_scan_vectors(imu, sensor_model):
 
     return L0
 
+
 def get_xyz0_xyz1(xyz, L0, h_min, h_max):
     """ Get the starting and ending locations of ray tracing.
 
@@ -547,6 +558,7 @@ def get_xyz0_xyz1(xyz, L0, h_min, h_max):
     del x, y, z
 
     return xyz0, xyz1
+
 
 @guvectorize(['void(f8[:,:,:], f8[:,:,:], f8[:,:,:], f8[:,:], f8[:], f8[:,:,:])'],
              '(b,n,m), (b,n,m), (b,n,m), (u,v), (c) -> (b,m,n)', cache=True)
@@ -595,6 +607,7 @@ def ray_tracer_ufunc(xyz0, xyz1, L0, dem, dem_gt, output):
     for i in range(xyz0.shape[1]): # Iterate over detectors
         for j in range(xyz0.shape[2]): # Iterate over scanlines
             output[:,j,i] = ray_tracing(xyz0[:,i,j], xyz1[:,i,j], L0[:,i,j], dem, dem_origin, resolution)
+
 
 @jit
 def ray_tracing(XYZ0, XYZ1, V, DEM, DEM_X0Y0, DEM_Resolution):

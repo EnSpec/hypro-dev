@@ -7,8 +7,9 @@
 # Dept. of Forest and Wildlife Ecology
 # University of Wisconsin - Madison
 
-from ENVI import read_envi_header, write_envi_header
 import numpy as np
+
+from ENVI import read_envi_header, write_envi_header
 
 if __name__ == "__main__":
 
