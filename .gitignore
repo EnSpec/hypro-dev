@@ -1,13 +1,17 @@
 .DS_Store
 
 # Ignore pycached files
-hypro/__pycache__/*.pyc
+hypro/__pycache__/
 
 # Ignore generated documentation
-docs/*
+docs/_build
+docs/_static
+docs/_templates
+docs/*.rst
 
 # But keep sphinx core files
+!docs/index.rst
+!docs/conf.py
 !docs/Makefile
 !docs/make.bat
-!docs/source/conf.py
-!docs/source/index.rst
+!docs/README.md

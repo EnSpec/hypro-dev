@@ -8,7 +8,7 @@ HyPro Documentation v1.0.0
     :maxdepth: 2
     :caption: Contents:
 
-    ../../README.md
+    README
     HyspexPro
     AtmCorr
     AtmLUT
