@@ -47,7 +47,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
     from ENVI     import empty_envi_header, read_envi_header, write_envi_header
     from Spectra import get_closest_wave, resample_solar_flux
 
-    # Read radiance image data.
+    # Read radiance image data
     rdn_header = read_envi_header(os.path.splitext(rdn_image_file)[0]+'.hdr')
     if rdn_header['interleave'].lower() == 'bil':
         rdn_image = np.memmap(rdn_image_file,
@@ -66,12 +66,12 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
     else:
         logger.error('Cannot read radiance data from %s format file.' %rdn_header['interleave'])
 
-    # Read solar flux.
+    # Read solar flux
     solar_flux = resample_solar_flux(solar_flux_file, rdn_header['wavelength'], rdn_header['fwhm'])
     cos_sun_zenith = np.cos(np.deg2rad(sun_zenith))
     d2 = distance**2
 
-    # Initialize classification.
+    # Initialize classification
     pre_class_image = np.memmap(pre_class_image_file,
                                 dtype='uint8',
                                 mode='w+',
@@ -79,25 +79,25 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
                                        rdn_header['samples']))
     pre_class_image[:,:] = 0
 
-    # Define VNIR sensor wavelengths.
+    # Define VNIR sensor wavelengths
     blue_wave, blue_band = get_closest_wave(rdn_header['wavelength'], 470)
     green_wave, green_band = get_closest_wave(rdn_header['wavelength'], 550)
     red_wave, red_band = get_closest_wave(rdn_header['wavelength'], 660)
     nir_wave, nir_band = get_closest_wave(rdn_header['wavelength'], 850)
 
-    # Define SWIR sensor wavelengths.
+    # Define SWIR sensor wavelengths
     cirrus_wave, cirrus_band = get_closest_wave(rdn_header['wavelength'], 1380)
     swir1_wave, swir1_band = get_closest_wave(rdn_header['wavelength'], 1650)
     swir2_wave, swir2_band = get_closest_wave(rdn_header['wavelength'], 2200)
 
-    # Determine the sensor type.
+    # Determine the sensor type
     if_vnir =  abs(blue_wave-470)<20 and abs(green_wave-550)<20 and abs(red_wave-660)<20 and abs(nir_wave-850)<20
     if_swir =  abs(cirrus_wave-1380)<20 and abs(swir1_wave-1650)<20 and abs(swir2_wave-2200)<20
     if_whole = if_vnir and if_swir
 
-    # Do classification.
+    # Do classification
     if if_whole:
-        # Calculate the reflectance at different bands.
+        # Calculate the reflectance at different bands
         if rdn_header['interleave'].lower() == 'bil':
             blue_refl = rdn_image[:,blue_band,:]*np.pi*d2/(solar_flux[blue_band]*cos_sun_zenith)
             green_refl = rdn_image[:,green_band,:]*np.pi*d2/(solar_flux[green_band]*cos_sun_zenith)
@@ -119,39 +119,39 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         rdn_image.flush()
         del rdn_image
 
-        # Calculate NDSI.
+        # Calculate NDSI
         ndsi = (green_refl-swir1_refl)/(green_refl+swir1_refl+1e-10)
 
-        # water
+        # Water
         water = (nir_refl<0.05)&(swir1_refl<0.03)
 
-        # land
+        # Land
         land = ~water
 
-        # shadow
+        # Shadow
         shadow = (water|land)&(green_refl<0.01)
         land = land&(~shadow)
         water = water&(~shadow)
 
-        # cloud over land
+        # Cloud over land
         Tc = 0.20
         cloud_over_land = land&(blue_refl>Tc)&(red_refl>0.15)&(nir_refl<red_refl*2.0)&(nir_refl>red_refl*0.8)&(nir_refl>swir1_refl)&(ndsi<0.7)
         land = land&(~cloud_over_land)
 
-        # cloud over water
+        # Cloud over water
         cloud_over_water = water&(blue_refl<0.40)&(blue_refl>0.20)&(green_refl<blue_refl)&(nir_refl<green_refl)&(swir1_refl<0.15)&(ndsi<0.20)
         water = water&(~cloud_over_water)
 
-        # cloud shadow
+        # Cloud shadow
         cloud_shadow = (water|land)&(nir_refl<0.12)&(nir_refl>0.04)&(swir1_refl<0.20)
         land = land&(~cloud_shadow)
         water = water&(~cloud_shadow)
 
-        # snow/ice
+        # Snow & ice
         snow_ice = land&(((blue_refl>0.22)&(ndsi>0.60))|((green_refl>0.22)&(ndsi>0.25)&(swir2_refl<0.5*green_refl)))
         land = land&(~snow_ice)
 
-        # cirrus over land and water
+        # Cirrus over land & water
         thin_cirrus = (cirrus_refl<0.015)&(cirrus_refl>0.010)
         medium_cirrus = (cirrus_refl<0.025)&(cirrus_refl>=0.015)
         thick_cirrus = (cirrus_refl<0.040)&(cirrus_refl>=0.025)
@@ -182,7 +182,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         land = land&(~thick_cirrus_cloud)
         water = water&(~thick_cirrus_cloud)
 
-        # haze over water
+        # Haze over water
         T2 = 0.04
         T1 = 0.12
         thin_haze_over_water = water&(nir_refl>=T1)&(nir_refl<=0.06)
@@ -190,7 +190,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         medium_haze_over_water = water&(nir_refl>=0.06)&(nir_refl<=T2)
         water = water&(~medium_haze_over_water)
 
-        # Assign class values.
+        # Assign class values
         pre_class_image[shadow] = 1
         pre_class_image[thin_cirrus_over_water] = 2
         pre_class_image[medium_cirrus_over_water] = 3
@@ -209,7 +209,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         pre_class_image[thick_cirrus_cloud] = 19
         pre_class_image[cloud_shadow] = 22
 
-        # Clear data.
+        # Clear data
         del shadow, thin_cirrus_over_water, medium_cirrus_over_water
         del thick_cirrus_over_water, land, snow_ice
         del thin_cirrus_over_land, medium_cirrus_over_land, thick_cirrus_over_land
@@ -218,7 +218,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         del thick_cirrus_cloud, cloud_shadow
 
     elif if_vnir:
-        # Calculate the reflectance at different bands.
+        # Calculate the reflectance at different bands
         if rdn_header['interleave'].lower() == 'bil':
             blue_refl = rdn_image[:,blue_band,:]*np.pi*d2/(solar_flux[blue_band]*cos_sun_zenith)
             green_refl = rdn_image[:,green_band,:]*np.pi*d2/(solar_flux[green_band]*cos_sun_zenith)
@@ -232,32 +232,32 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         rdn_image.flush()
         del rdn_image
 
-        # water
+        # Water
         water = nir_refl<0.05
 
-        # land
+        # Land
         land = ~water
 
-        # shadow
+        # Shadow
         shadow = (water|land)&(green_refl<0.01)
         land = land&(~shadow)
         water = water&(~shadow)
 
-        # cloud over land
+        # Cloud over land
         Tc = 0.20
         cloud_over_land = land&(blue_refl>Tc)&(red_refl>0.15)&(nir_refl<red_refl*2.0)&(nir_refl>red_refl*0.8)
         land = land&(~cloud_over_land)
 
-        # cloud over water
+        # Cloud over water
         cloud_over_water = water&(blue_refl<0.40)&(blue_refl>0.20)&(green_refl<blue_refl)&(nir_refl<green_refl)
         water = water&(~cloud_over_water)
 
-        # cloud shadow
+        # Cloud shadow
         cloud_shadow = (water|land)&(nir_refl<0.12)&(nir_refl>0.04)
         land = land&(~cloud_shadow)
         water = water&(~cloud_shadow)
 
-        # haze over water
+        # Haze over water
         T2 = 0.04
         T1 = 0.12
         thin_haze_over_water = water&(nir_refl>=T1)&(nir_refl<=0.06)
@@ -265,7 +265,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         medium_haze_over_water = water&(nir_refl>=0.06)&(nir_refl<=T2)
         water = water&(~medium_haze_over_water)
 
-        # Assign class values.
+        # Assign class values
         pre_class_image[shadow] = 1
         pre_class_image[land] = 5
         pre_class_image[thin_haze_over_water] = 13
@@ -275,13 +275,13 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         pre_class_image[water] = 17
         pre_class_image[cloud_shadow] = 22
 
-        # Clear data.
+        # Clear data
         del shadow, land, thin_haze_over_water
         del medium_haze_over_water, cloud_over_land, cloud_over_water
         del water, cloud_shadow
 
     elif if_swir:
-        # Calculate the reflectance at different bands.
+        # Calculate the reflectance at different bands
         if rdn_header['interleave'] == 'bil':
             cirrus_refl = rdn_image[:,cirrus_band,:]*np.pi*d2/(solar_flux[cirrus_band]*cos_sun_zenith)
             swir1_refl = rdn_image[:,swir1_band,:]*np.pi*d2/(solar_flux[swir1_band]*cos_sun_zenith)
@@ -293,13 +293,13 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         rdn_image.flush()
         del rdn_image
 
-        # water
+        # Water
         water = swir1_refl<0.03
 
-        # land
+        # Land
         land = ~water
 
-        # cirrus over land and water
+        # Cirrus over land & water
         thin_cirrus = (cirrus_refl<0.015)&(cirrus_refl>0.010)
         medium_cirrus = (cirrus_refl<0.025)&(cirrus_refl>=0.015)
         thick_cirrus = (cirrus_refl<0.040)&(cirrus_refl>=0.025)
@@ -330,7 +330,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         land = land&(~thick_cirrus_cloud)
         water = water&(~thick_cirrus_cloud)
 
-        # Assign class values.
+        # Assign class values
         pre_class_image[thin_cirrus_over_water] = 2
         pre_class_image[medium_cirrus_over_water] = 3
         pre_class_image[thick_cirrus_over_water] = 4
@@ -342,7 +342,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         pre_class_image[cirrus_cloud] = 18
         pre_class_image[thick_cirrus_cloud] = 19
 
-        # Clear data.
+        # Clear data
         del thin_cirrus_over_water, medium_cirrus_over_water, thick_cirrus_over_water,
         del land, thin_cirrus_over_land, medium_cirrus_over_land, thick_cirrus_over_land
         del water, cirrus_cloud, thick_cirrus_cloud
@@ -350,7 +350,7 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
     else:
         logger.error('Cannot find appropriate wavelengths to do pre-classification.')
 
-    # Apply background mask.
+    # Apply background mask
     if background_mask_file is not None:
         bg_mask_header = read_envi_header(os.path.splitext(background_mask_file)[0]+'.hdr')
         bg_mask_image = np.memmap(background_mask_file,
@@ -362,11 +362,11 @@ def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distanc
         bg_mask_image.flush()
         del bg_mask_image
 
-    # Clear data.
+    # Clear data
     pre_class_image.flush()
     del pre_class_image
 
-    # Write header.
+    # Write header
     pre_class_header = empty_envi_header()
     pre_class_header['description'] = 'Pre-classification'
     pre_class_header['file type'] = 'ENVI Standard'

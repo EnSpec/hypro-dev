@@ -80,9 +80,9 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     """
         Build a background mask.
     """
-    # Use DEM and SCA images to build this mask.
+    # Use DEM & SCA images to build this mask
     for sensor_index, sensor_dict in sensors.items():
-        # Use dem.
+        # Use DEM
         tmp_header = read_envi_header(os.path.splitext(sensor_dict['ortho_dem_image_file'])[0]+'.hdr')
         tmp_image = np.memmap(sensor_dict['ortho_dem_image_file'],
                               dtype='float32',
@@ -94,7 +94,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
         resampled_image = resample_ortho_dem(np.copy(tmp_image), tmp_ulx, tmp_uly, tmp_pixel_size, x, y)
         mask = mask&(resampled_image>0.0)
 
-        # Use sca.
+        # Use SCA
         tmp_header = read_envi_header(os.path.splitext(sensor_dict['ortho_sca_image_file'])[0]+'.hdr')
         tmp_image = np.memmap(sensor_dict['ortho_sca_image_file'],
                               dtype='float32',
@@ -107,19 +107,19 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
         resampled_image = resample_ortho_sca(np.copy(tmp_image[0,:,:]), tmp_ulx, tmp_uly, tmp_pixel_size, x, y)
         mask = mask&(resampled_image>0.0)
 
-        # Clear data.
+        # Clear data
         del tmp_header, tmp_ulx, tmp_uly, tmp_pixel_size, resampled_image
         tmp_image.flush()
         del tmp_image
 
-    mask = ~mask # 1: background pixels; 0: non-background pixels.
+    mask = ~mask # 1: background pixels; 0: non-background pixels
 
-    # Write the mask to a file.
+    # Write mask to file
     fid = open(background_mask_file, 'wb')
     fid.write(mask.tostring())
     fid.close()
 
-    # Write the mask header to a file.
+    # Write mask header to file
     header = empty_envi_header()
     header['description'] = 'Background mask (0: non-background; 1: background)'
     header['file type'] = 'ENVI Standard'
@@ -140,7 +140,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     """
         Merge DEM.
     """
-    # Read the first DEM.
+    # Read the first DEM
     sensor_index = list(sensors.keys())[0]
     sensor_dict = sensors[sensor_index]
     raw_header = read_envi_header(os.path.splitext(sensor_dict['ortho_dem_image_file'])[0]+'.hdr')
@@ -156,7 +156,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
                                          x, y)
     resampled_image[mask] = -1000.0
 
-    # Write the merged DEM to a file.
+    # Write merged DEM to file
     fid = open(merged_dem_file, 'wb')
     fid.write(resampled_image.astype('float32').tostring())
     fid.close()
@@ -164,7 +164,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     raw_image.flush()
     del raw_image
 
-    # Write the merged DEM header to a file.
+    # Write merged DEM header to file
     header = empty_envi_header()
     header['description'] = 'Merged DEM, in [m]'
     header['file type'] = 'ENVI Standard'
@@ -187,7 +187,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     """
         Merge SCA.
     """
-    # Read the first SCA.
+    # Read the first SCA
     sensor_index = list(sensors.keys())[0]
     sensor_dict = sensors[sensor_index]
     raw_header = read_envi_header(os.path.splitext(sensor_dict['ortho_sca_image_file'])[0]+'.hdr')
@@ -198,7 +198,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
                                  raw_header['lines'],
                                  raw_header['samples']))
 
-    # Write data.
+    # Write data
     fid = open(merged_sca_file, 'wb')
     for band in range(raw_header['bands']):
         resampled_image = resample_ortho_sca(np.copy(raw_image[band,:,:]),
@@ -214,7 +214,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     raw_image.flush()
     del raw_image
 
-    # Write header.
+    # Write header
     header = empty_envi_header()
     header['description'] = 'Merged SCA, in [deg]'
     header['file type'] = 'ENVI Standard'
@@ -255,7 +255,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read mask.
+    # Read mask
     mask_header = read_envi_header(os.path.splitext(mask_file)[0]+'.hdr')
     mask_image = np.memmap(mask_file,
                            mode='r',
@@ -263,15 +263,15 @@ def merge_rdn(merged_image_file, mask_file, sensors):
                            shape=(mask_header['lines'],
                                   mask_header['samples']))
 
-    # Get the map upper-left coordinates and pixel sizes of VNIR and SWIR images.
+    # Get the map upper-left coordinates & pixel sizes of VNIR & SWIR images
     ulx, uly, pixel_size = float(mask_header['map info'][3]), float(mask_header['map info'][4]), float(mask_header['map info'][5])
 
-    # Determine regular map grids.
+    # Determine regular map grids
     x, y = np.meshgrid(ulx+np.arange(mask_header['samples'])*pixel_size,
                        uly-np.arange(mask_header['lines'])*pixel_size)
     del ulx, uly, pixel_size
 
-    # Read radiance header and image.
+    # Read radiance header & image
     header_dict = dict()
     image_file_dict = dict()
     bands_waves_fwhms = []
@@ -283,12 +283,12 @@ def merge_rdn(merged_image_file, mask_file, sensors):
         image_file_dict[sensor_index] = sensor_dict['ortho_rdn_image_file']
     bands_waves_fwhms.sort(key = lambda x: x[1])
 
-    # Merge images.
+    # Merge images
     wavelengths = []
     fwhms = []
     fid  = open(merged_image_file, 'wb')
     for v in bands_waves_fwhms:
-        # Determine which sensor, band to read.
+        # Determine which sensor, band to read
         sensor_index, band = v[0].split('_')
         band = int(band)
         wavelengths.append(v[1])
@@ -296,11 +296,11 @@ def merge_rdn(merged_image_file, mask_file, sensors):
         header = header_dict[sensor_index]
         image_file = image_file_dict[sensor_index]
 
-        # Write image.
+        # Write image
         if ((v[1]>=1339.0)&(v[1]<=1438.0))|((v[1]>=1808.0)&(v[1]<=1978.0))|(v[1]>=2467.0):
             resampled_image = np.zeros(x.shape)
         else:
-            offset = header['header offset']+4*band*header['lines']*header['samples']# in bytes
+            offset = header['header offset']+4*band*header['lines']*header['samples'] # in bytes
             rdn_image = np.memmap(image_file,
                                   dtype='float32',
                                   mode='r',
@@ -322,7 +322,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
     mask_image.flush()
     del mask_image
 
-    # Write header.
+    # Write header
     header = empty_envi_header()
     header['description'] = 'Merged radiance, in [mW/(cm2*um*sr)]'
     header['file type'] = 'ENVI Standard'
@@ -367,7 +367,7 @@ def resample_ortho_sca(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
 
     from scipy import ndimage
 
-    # Average reflectance
+    # Average image
     weights = np.ones((2,2))
     count = raw_image>=0.0
     raw_image[~count] = 0.0
@@ -408,7 +408,7 @@ def resample_ortho_dem(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
 
     from scipy import ndimage
 
-    # Average reflectance
+    # Average image
     weights = np.ones((2,2))
     count = raw_image>0.0
     raw_image[~count]=0.0
@@ -449,7 +449,7 @@ def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
 
     from scipy import ndimage
 
-    # Average radiance.
+    # Average radiance
     weights = np.ones((2,2))
     count = raw_image>0.0
     raw_image[~count]=0.0
@@ -458,7 +458,7 @@ def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     avg_image[count>0] /= count[count>0]
     del count
 
-    # Resample.
+    # Resample
     samples = ((x-raw_ulx)/raw_pixel_size).astype('int32')
     lines = ((raw_uly-y)/raw_pixel_size).astype('int32')
     resampled_image = avg_image[lines, samples]

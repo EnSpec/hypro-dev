@@ -47,20 +47,20 @@ def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file
     from ENVI import empty_envi_header, write_envi_header
     from scipy import interpolate
 
-    # Read IMU and GPS data.
+    # Read IMU & GPS data
     imugps = np.loadtxt(imugps_file) # ID, X, Y, Z, R, P, H, R_Offset, P_Offset, H_Offset, Grid_Convergence
 
-    # Read sensor model data.
+    # Read sensor model data
     sensor_model = np.loadtxt(sensor_model_file, skiprows=1)[:,1:]
 
-    # Read DEM data.
+    # Read DEM data
     ds = gdal.Open(dem_image_file, gdal.GA_ReadOnly)
     dem_image = ds.GetRasterBand(1).ReadAsArray()
     dem_geotransform = ds.GetGeoTransform()
     dem_prj = ds.GetProjection()
     ds = None
 
-    # Apply boresight offsets.
+    # Apply boresight offsets
     if boresight_options[0]:
         imugps[:,4] += imugps[:,7]
     if boresight_options[1]:
@@ -71,18 +71,18 @@ def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file
         imugps[:,3] += imugps[:,10]
     imugps[:,6] -= imugps[:,11] # Heading - grid convergence
 
-    # Get scan vectors.
+    # Get scan vectors
     L0 = get_scan_vectors(imugps[:,4:7], sensor_model)
     del sensor_model
 
-    # Get start and end points of ray tracing.
+    # Get start & end points of ray-tracing
     index = dem_image>0.0
     dem_min = dem_image[index].min()
     dem_max = dem_image[index].max()
     del index
     xyz0, xyz1 = get_xyz0_xyz1(imugps[:,1:4], L0, dem_min, dem_max)
 
-    # Ray-tracing.
+    # Do ray-tracing
     lines = imugps.shape[0]
     samples = L0.shape[1]
     logger.info('Beginning ray-tracing ({} scanlines)...'.format(lines))
@@ -90,20 +90,20 @@ def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file
     del dem_image, xyz0, xyz1, L0, imugps
     logger.info('Ray-tracing complete.')
 
-    # Interpolate IGM.
+    # Interpolate IGM
     nan_lines = []
     nonnan_lines = []
     for line in np.arange(lines):
-        # Find Nan values.
+        # Find Nan values
         nan_flag = np.isnan(igm_image[0, line, :])
 
-        # If all columns are Nan values;
+        # All columns are NaN values
         if np.all(nan_flag):
             del nan_flag
             nan_lines.append(line)
             continue
 
-        # If some columns are Nan values;
+        # Some columns are NaN values
         if np.any(nan_flag):
             nan_samples = np.arange(samples)[nan_flag]
             nonnan_samples = np.arange(samples)[~nan_flag]
@@ -120,7 +120,7 @@ def calculate_igm(igm_image_file, imugps_file, sensor_model_file, dem_image_file
         del index, nonnan_line
     logger.info('IGM interpolation complete.')
 
-    # Write IGM image.
+    # Write IGM image
     fid = open(igm_image_file, 'wb')
     fid.write(igm_image.tostring())
     fid.close()
@@ -166,7 +166,7 @@ def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read IGM data.
+    # Read IGM data
     igm_header = read_envi_header(os.path.splitext(igm_image_file)[0]+'.hdr')
     igm_image = np.memmap(igm_image_file,
                           dtype='float64',
@@ -176,10 +176,10 @@ def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
                                  igm_header['lines'],
                                  igm_header['samples']))
 
-    # Read GPS data.
+    # Read GPS data
     imugps = np.loadtxt(imugps_file) # ID, X, Y, Z, R, P, H, ...
 
-    # Calculate sensor angles.
+    # Calculate sensor angles
     DX = igm_image[0,:,:]-np.expand_dims(imugps[:,1], axis=1)
     DY = igm_image[1,:,:]-np.expand_dims(imugps[:,2], axis=1)
     DZ = igm_image[2,:,:]-np.expand_dims(imugps[:,3], axis=1)
@@ -204,14 +204,14 @@ def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
     view_azimuth[index]=2*np.pi-view_azimuth[index]
     del DX, DY, DZ, index
 
-    # Save scan angles.
+    # Save scan angles
     fid = open(sca_image_file, 'wb')
     fid.write(np.rad2deg(view_zenith).astype('float32').tostring())
     fid.write(np.rad2deg(view_azimuth).astype('float32').tostring())
     fid.close()
     del view_zenith, view_azimuth
 
-    # Write scan angle header file.
+    # Write scan angle header file
     sca_header = empty_envi_header()
     sca_header['description'] = 'SCA [deg]'
     sca_header['file type'] = 'ENVI Standard'
@@ -268,7 +268,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read IGM.
+    # Read IGM
     igm_header = read_envi_header(os.path.splitext(igm_image_file)[0]+'.hdr')
     igm_image = np.memmap(igm_image_file,
                           dtype='float64',
@@ -276,7 +276,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
                           offset=0,
                           shape=(igm_header['bands'], igm_header['lines'], igm_header['samples']))
 
-    # Estimate output spatial extent.
+    # Estimate output spatial extent
     X_Min = igm_image[0,:,:].min()
     X_Max = igm_image[0,:,:].max()
     Y_Min = igm_image[1,:,:].min()
@@ -288,7 +288,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     igm_image.flush()
     del igm_image
 
-    # Build VRT for IGM.
+    # Build VRT for IGM
     igm_vrt_file = os.path.splitext(igm_image_file)[0]+'.vrt'
     igm_vrt = open(igm_vrt_file,'w')
     igm_vrt.write('<VRTDataset rasterxsize="%s" rasterysize="%s">\n' %(igm_header['samples'], igm_header['lines']))
@@ -308,7 +308,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     igm_vrt.write("</VRTDataset>\n")
     igm_vrt.close()
 
-    # Make IGM index image.
+    # Make IGM index image
     index_image_file = igm_image_file+'_Index'
     index_image = np.memmap(index_image_file,
                             dtype='int32',
@@ -334,7 +334,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     index_header_file = os.path.splitext(index_image_file)[0]+'.hdr'
     write_envi_header(index_header_file, index_header)
 
-    # Build VRT for IGM Index.
+    # Build VRT for IGM index
     index_vrt_file = os.path.splitext(index_image_file)[0]+'.vrt'
     index_vrt = open(index_vrt_file,'w')
     index_vrt.write('<VRTDataset rasterxsize="%s" rasterysize="%s">\n' %(index_header['samples'], index_header['lines']))
@@ -364,7 +364,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     index_vrt.write("</VRTDataset>\n")
     index_vrt.close()
 
-    # Build GLT.
+    # Build GLT
     tmp_glt_image_file = glt_image_file+'.tif'
     tmp_glt_image = gdal.Warp(tmp_glt_image_file, index_vrt_file,
                               outputBounds=(X_Min, Y_Min, X_Max, Y_Max),
@@ -376,7 +376,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
                               geoloc=True)
     del tmp_glt_image
 
-    # Convert the .tif file to ENVI format.
+    # Convert .TIF file to ENVI format
     ds = gdal.Open(tmp_glt_image_file, gdal.GA_ReadOnly)
     lines = ds.RasterYSize
     samples = ds.RasterXSize
@@ -391,7 +391,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     del glt_image
     ds = None
 
-    # Write GLT header.
+    # Write GLT header
     glt_header = empty_envi_header()
     glt_header['description'] = 'GLT'
     glt_header['file type'] = 'ENVI Standard'
@@ -417,7 +417,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
     glt_header_file = os.path.splitext(glt_image_file)[0]+'.hdr'
     write_envi_header(glt_header_file, glt_header)
 
-    # Remove temporary files.
+    # Remove temporary files
     os.remove(index_image_file)
     os.remove(index_vrt_file)
     os.remove(index_header_file)
@@ -472,9 +472,9 @@ def get_scan_vectors(imu, sensor_model):
     n_detectors = sensor_model.shape[0]
 
     # Navigational standard angles -> Euler angles
-    heading[heading<0] = heading[heading<0]+360 # heading: -180~180 -> 0~360
-    heading = 90-heading # heading angle -> euler angle
-    pitch = -pitch # pitch angle -> euler angle
+    heading[heading<0] = heading[heading<0]+360 # Heading: -180~180 -> 0~360
+    heading = 90-heading # Heading angle -> Euler angle
+    pitch = -pitch # Pitch angle -> Euler angle
 
     # [degree] to [radian]
     roll = np.deg2rad(roll)
@@ -655,7 +655,7 @@ def ray_tracing(XYZ0, XYZ1, V, DEM, DEM_X0Y0, DEM_Resolution):
     x1, y1 = (XYZ0[0]-DEM_X0Y0[0])/cellsize_x, (XYZ0[1]-DEM_X0Y0[1])/cellsize_y
     x2, y2 = (XYZ1[0]-DEM_X0Y0[0])/cellsize_x, (XYZ1[1]-DEM_X0Y0[1])/cellsize_y
 
-    # Get the integer and fraction parts of x1, y1, x2, y2
+    # Get the integer & fraction parts of x1, y1, x2, y2
     x1_integer, y1_integer = int(np.floor(x1)), int(np.floor(y1))
     x1_fraction, y1_fraction = x1-x1_integer, y1-y1_integer
 
@@ -663,7 +663,7 @@ def ray_tracing(XYZ0, XYZ1, V, DEM, DEM_X0Y0, DEM_Resolution):
     ray_direction = np.array([x2-x1, y2-y1])
     ray_direction = ray_direction/np.linalg.norm(ray_direction)
 
-    # Initialize tx and ty
+    # Initialize tx & ty
     if ray_direction[0] > 0.0:
         tx = (1.0-x1_fraction)/ray_direction[0]
         delta_tx = 1/ray_direction[0]

@@ -16,16 +16,28 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-# Define atmosphere database parameters. Do not make any change to them.
-atm_db_VZA_grid_size = 5 # view zenith angle grid size, in [deg]
-atm_db_RAA_grid_size = 15 # relative azimuth angle grid size, in [deg]
-atm_db_RHO =  np.array([0, 0.5, 1.0]) # surface albedo, unitless
-atm_db_WVC =  np.array([4, 10, 15, 20, 25, 30, 35, 40, 45, 50]) # water vapor column, in [mm]
-atm_db_VIS =  np.array([5, 10, 20, 40, 80, 120]) # aerosol visibility, in [km]
-atm_db_WAVE =  np.arange(4000, 25001)/10 # wavelength, in [nm]
-atm_db_SZA = np.array([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70]) # sun zenith angle, in [deg]
-atm_db_VZA = np.array([0, 5, 10, 15, 20, 25, 30, 40]) # view zenith angle, in [deg]
-atm_db_RAA = np.array([0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180]) # relative azimuth angle, in [deg]
+# ------------- ATMOSPHERIC DATABASE PARAMETERS - DO NOT CHANGE! -------------
+
+# View zenith angle grid size, in [deg]
+atm_db_VZA_grid_size = 5
+# Relative azimuth angle grid size, in [deg]
+atm_db_RAA_grid_size = 15
+# Surface albedo, unitless
+atm_db_RHO =  np.array([0, 0.5, 1.0])
+# Water vapor column, in [mm]
+atm_db_WVC =  np.array([4, 10, 15, 20, 25, 30, 35, 40, 45, 50])
+# Aerosol visibility, in [km]
+atm_db_VIS =  np.array([5, 10, 20, 40, 80, 120])
+# Wavelength, in [nm]
+atm_db_WAVE =  np.arange(4000, 25001)/10
+# Solar zenith angle, in [deg]
+atm_db_SZA = np.array([0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70])
+# View zenith angle, in [deg]
+atm_db_VZA = np.array([0, 5, 10, 15, 20, 25, 30, 40])
+# Relative azimuth angle, in [deg]
+atm_db_RAA = np.array([0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180])
+
+# ----------------------------------------------------------------------------
 
 
 def build_atm_lut(flight_dict):
@@ -44,7 +56,7 @@ def build_atm_lut(flight_dict):
         logger.info('Write the raw ALT to %s.' %flight_dict['raw_atm_lut_file'])
         return
 
-    # Get sun angles (zenith and azimuth), above-sea-level elevation, above-ground flight altitude.
+    # Get solar angles (zenith & azimuth), ground elevation (MSL), & flight altitude (AGL)
     sensor_dict = flight_dict['sensors'][list(flight_dict['sensors'].keys())[0]]
     atm_lut_sza, atm_lut_saa = tuple(flight_dict['sun_angles'])
     atm_lut_elev = get_avg_elev(sensor_dict['dem_image_file'])/1000.0 # 1000.0 converts [m] to [km].
@@ -53,7 +65,7 @@ def build_atm_lut(flight_dict):
     atm_lut_zout = flight_altitude - atm_lut_elev
     del imugps, flight_altitude, sensor_dict
 
-    # Get the ELEV and ZOUT grids of the atmosphere database.
+    # Get the ELEV & ZOUT grids of the atmospheric database
     atm_db_folders = glob.glob(os.path.join(flight_dict['atm_database_dir'], flight_dict['atm_mode'], 'ELEV_*ZOUT_*'))
     if atm_db_folders == []:
         raise IOError('Cannot find any atmospheric database file under %s.' %(os.path.join(flight_dict['atm_database_dir'], flight_dict['atm_mode'])))
@@ -64,25 +76,25 @@ def build_atm_lut(flight_dict):
         atm_db_ELEV.append(int(tmp[1])/1000.0)
         atm_db_ZOUT.append(int(tmp[3])/1000.0)
     del atm_db_folders, folder
-    atm_db_ELEV = sorted(list(set(atm_db_ELEV))) # Remove duplicates, and sort values;
-    atm_db_ZOUT = sorted(list(set(atm_db_ZOUT))) # Remove duplicates, and sort values;
+    atm_db_ELEV = sorted(list(set(atm_db_ELEV))) # Remove duplicates & sort values
+    atm_db_ZOUT = sorted(list(set(atm_db_ZOUT))) # Remove duplicates & sort values
 
-    # Get the elevation interpolation range.
+    # Get ground elevation interpolation range
     if np.all(np.array(atm_db_ELEV)<atm_lut_elev) or np.all(np.array(atm_db_ELEV)>atm_lut_elev):
         raise IOError('The above-sea-level elevation (%.2f) is out of range (%.2f - %.2f).' %(atm_lut_elev, min(atm_db_ELEV), max(atm_db_ELEV)))
     elev_dict = get_interp_range(atm_db_ELEV, atm_lut_elev)
 
-    # Get the above-ground flight altitude interpolation range.
+    # Get flight altitude interpolation range
     if np.all(np.array(atm_db_ZOUT)<atm_lut_zout) or np.all(np.array(atm_db_ZOUT)>atm_lut_zout):
         raise IOError('The above-ground flight altitude (%.2f) is out of range (%.2f - %.2f).' %(atm_lut_zout, min(atm_db_ZOUT), max(atm_db_ZOUT)))
     zout_dict = get_interp_range(atm_db_ZOUT, atm_lut_zout)
 
-    # Get the sun zenith angle interpolation range.
+    # Get solar zenith angle interpolation range
     if np.all(np.array(atm_db_SZA)<atm_lut_sza) or np.all(np.array(atm_db_SZA)>atm_lut_sza):
         raise IOError('The sun zenith angle (%.2f) is out of range (%.2f - %.2f).' %(atm_lut_sza, min(atm_db_SZA), max(atm_db_SZA)))
     sza_dict = get_interp_range(atm_db_SZA, atm_lut_sza)
 
-    # Print out interpolation ranges.
+    # Print out interpolation ranges
     logger.info('Atmospheric database interpolation point and range:')
     index = list(elev_dict.keys())
     logger.info('ELEV [km] = %.2f, %.2f - %.2f' %(atm_lut_elev, atm_db_ELEV[index[0]], atm_db_ELEV[index[1]]))
@@ -91,7 +103,7 @@ def build_atm_lut(flight_dict):
     index = list(sza_dict.keys())
     logger.info('SZA [deg] = %.2f, %.2f - %.2f' %(atm_lut_sza, atm_db_SZA[index[0]], atm_db_SZA[index[1]]))
 
-    # Initialize the atmosphere lookup table.
+    # Initialize the atmospheric lookup table (ALT)
     atm_lut = np.memmap(flight_dict['raw_atm_lut_file'],
                         dtype='float32',
                         mode='w+',
@@ -103,18 +115,18 @@ def build_atm_lut(flight_dict):
                                len(atm_db_WAVE)))
     atm_lut[...] = 0.0
 
-    # Do interpolations.
+    # Do interpolation
     index_combos = combos([list(elev_dict.keys()), list(zout_dict.keys()), list(sza_dict.keys())])
     for index_combo in index_combos:
         elev_index, zout_index, sza_index = index_combo
-        # Get atmosphere database filename: atm_database/ELEV_xxxx_ZOUT_xxxx/ELEV_xxxx_ZOUT_xxxx_SZA_xxx.
+        # Get atmosphere database filename: atm_database/ELEV_xxxx_ZOUT_xxxx/ELEV_xxxx_ZOUT_xxxx_SZA_xxx
         basename = 'ELEV_%04d_ZOUT_%04d' %(atm_db_ELEV[elev_index]*1000, atm_db_ZOUT[zout_index]*1000)
         atm_db_file = os.path.join(flight_dict['atm_database_dir'],
                                    flight_dict['atm_mode'],
                                    basename,
                                    '%s_SZA_%03d' %(basename, atm_db_SZA[sza_index]))
 
-        # Read atmosphere database data.
+        # Read atmosphere database data
         atm_db = np.memmap(atm_db_file,
                            dtype='float32',
                            mode='r',
@@ -125,20 +137,20 @@ def build_atm_lut(flight_dict):
                                   len(atm_db_RAA),
                                   len(atm_db_WAVE)))
 
-        # Update the atmosphere lookup table.
+        # Update the atmosphere lookup table
         atm_lut += atm_db*elev_dict[elev_index]*zout_dict[zout_index]*sza_dict[sza_index]
 
-        # Clear database.
+        # Clear database
         atm_db.flush()
         del basename, atm_db_file, atm_db
     del index_combos
 
-    # Divide radiance by the sun-earth-distance adjusting factor and 10 (to convert radiance to mW/(cm2*um*sr)).
+    # Divide radiance by the sun-earth-distance adjusting factor and 10 (to convert radiance to mW/(cm2*um*sr))
     atm_lut /= ((flight_dict['sun_earth_distance']**2)*10.0)
     atm_lut.flush()
     del atm_lut
 
-    # Write the metadata of the atmosphere lookup table.
+    # Write ALT metadata
     atm_lut_metadata = dict()
     atm_lut_metadata['description'] = 'Raw atmospheric lookup table radiance [mW/(cm2*um*sr)]'
     atm_lut_metadata['dtype'] = 'float32'
@@ -180,7 +192,7 @@ def resample_atm_lut(resampled_atm_lut_file, raw_atm_lut_file, rdn_header_file):
     from ENVI    import read_envi_header
     from Spectra import resample_spectra
 
-    # Read atmosphere look-up table grids.
+    # Read atmospheric lookup table (ALT) grids
     atm_lut_metadata = read_binary_metadata(raw_atm_lut_file+'.meta')
     atm_lut_metadata['shape'] = tuple([int(v) for v in atm_lut_metadata['shape']])
     atm_lut_RHO = np.array([float(v) for v in atm_lut_metadata['RHO']])
@@ -190,19 +202,19 @@ def resample_atm_lut(resampled_atm_lut_file, raw_atm_lut_file, rdn_header_file):
     atm_lut_RAA = np.array([float(v) for v in atm_lut_metadata['RAA']])
     atm_lut_WAVE = np.array([float(v) for v in atm_lut_metadata['WAVE']])
 
-    # Read atmosphere look-up table data.
+    # Read atmospheric lookup table data
     atm_lut = np.memmap(raw_atm_lut_file,
                         dtype=atm_lut_metadata['dtype'],
                         mode='r',
                         shape=atm_lut_metadata['shape'])# shape = (RHO, WVC, VIS, VZA, RAA, WAVE)
 
-    # Reshape.
+    # Reshape
     atm_lut = atm_lut.reshape((len(atm_lut_RHO)*len(atm_lut_WVC)*len(atm_lut_VIS)*len(atm_lut_VZA)*len(atm_lut_RAA), len(atm_lut_WAVE)))
 
-    # Read radiance header.
+    # Read radiance header
     rdn_header = read_envi_header(rdn_header_file)
 
-    # Do spectral resampling.
+    # Do spectral resampling
     atm_lut = resample_spectra(atm_lut, atm_lut_WAVE, rdn_header['wavelength'], rdn_header['fwhm'])
     atm_lut = atm_lut.reshape((len(atm_lut_RHO),
                                len(atm_lut_WVC),
@@ -211,13 +223,13 @@ def resample_atm_lut(resampled_atm_lut_file, raw_atm_lut_file, rdn_header_file):
                                len(atm_lut_RAA),
                                len(rdn_header['wavelength'])))
 
-    # Write data into the file.
+    # Write data to file
     fid = open(resampled_atm_lut_file, 'wb')
     fid.write(atm_lut.astype('float32').tostring())
     fid.close()
     del atm_lut
 
-    # Write metadata.
+    # Write metadata
     atm_lut_metadata['shape'] = [len(atm_lut_RHO), len(atm_lut_WVC), len(atm_lut_VIS), len(atm_lut_VZA), len(atm_lut_RAA), len(rdn_header['wavelength'])]
     atm_lut_metadata['WAVE'] = rdn_header['wavelength']
     write_binary_metadata(resampled_atm_lut_file+'.meta', atm_lut_metadata)

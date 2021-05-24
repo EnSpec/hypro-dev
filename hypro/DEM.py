@@ -38,7 +38,7 @@ def get_avg_elev(dem_image_file):
 
     ds = gdal.Open(dem_image_file, gdal.GA_ReadOnly)
     dem_image = ds.GetRasterBand(1).ReadAsArray()
-    avg_elev = dem_image[dem_image>0].mean() # Negative values are ignored.
+    avg_elev = dem_image[dem_image>0].mean() # Negative values are ignored
     ds = None
     del dem_image
 
@@ -70,7 +70,7 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
 
     from ENVI import empty_envi_header, write_envi_header
 
-    # Estimate the spatial range of the flight area.
+    # Estimate spatial extent of flight area
     """ Notes:
         (1) The `altitude` here is above the mean sea level, or the Earth
             ellipsoid surface, rather than above the ground surface. Strictly speaking,
@@ -87,12 +87,12 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
     y_max = imugps[:,2].max()+half_swath+buffer
     del imugps, half_swath, altitude, buffer
 
-    # Process DEM.
-    if type(dem) is str: # If `old_dem` is a file, then clip it to the flight area.
-        # Read raw DEM.
+    # Process DEM
+    if type(dem) is str: # If `old_dem` is a file, then clip it to the flight area
+        # Read raw DEM
         ds = gdal.Open(dem, gdal.GA_ReadOnly)
 
-        # Get image rows and columns.
+        # Get image rows & columns
         geotransform = ds.GetGeoTransform()
 
         col_0 = int((x_min-geotransform[0])/geotransform[1])
@@ -111,11 +111,11 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
         cols  = int(col_1-col_0)
         rows  = int(row_1-row_0)
 
-        # Read a subset of DEM.
+        # Read subset of DEM
         dem_image = ds.GetRasterBand(1).ReadAsArray(col_0, row_0, cols, rows)
         dem_image = dem_image.astype('float32')
 
-        # Write clipped DEM image.
+        # Write clipped DEM image
         fid = open(dem_image_file, 'wb')
         fid.write(dem_image.tostring())
         fid.close()
@@ -132,7 +132,7 @@ def prepare_dem(dem_image_file, dem, imugps_file, fov, map_crs, pixel_size):
         del col_0, col_1, row_0, row_1
 
     elif type(dem) in [int, float]:
-        # Make a flat DEM.
+        # Make a flat DEM
         rows = int((y_max-y_min)/pixel_size)
         cols = int((x_max-x_min)/pixel_size)
         dem_image = np.ones((rows, cols))*dem

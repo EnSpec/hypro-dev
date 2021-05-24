@@ -36,10 +36,10 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read SCA image.
+    # Read SCA image
     sca_header = read_envi_header(os.path.splitext(sca_image_file)[0]+'.hdr')
 
-    # Read GLT image.
+    # Read GLT image
     glt_header = read_envi_header(os.path.splitext(glt_image_file)[0]+'.hdr')
     glt_image = np.memmap(glt_image_file,
                           dtype=np.int32,
@@ -48,11 +48,11 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
                                  glt_header['lines'],
                                  glt_header['samples']))
 
-    # Get spatial indices.
+    # Get spatial indices
     I, J = np.where((glt_image[0,:,:]>=0)&(glt_image[1,:,:]>=0))
     ortho_sca_image = np.zeros((glt_header['lines'], glt_header['samples']), dtype='float32')
 
-    # Orthorectify SCA.
+    # Orthorectify SCA
     fid = open(ortho_sca_image_file, 'wb')
     for band in range(sca_header['bands']):
         ortho_sca_image[:,:] = -1000.0
@@ -113,7 +113,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read IGM image (the third band is DEM).
+    # Read IGM image (third band is DEM)
     igm_header = read_envi_header(igm_image_file+'.hdr')
     igm_image = np.memmap(igm_image_file,
                           dtype='float64',
@@ -123,7 +123,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
                                  igm_header['samples']))
     del igm_header
 
-    # Read GLT image.
+    # Read GLT image
     glt_header = read_envi_header(glt_image_file+'.hdr')
     glt_image = np.memmap(glt_image_file,
                           dtype=np.int32,
@@ -132,11 +132,11 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
                                  glt_header['lines'],
                                  glt_header['samples']))
 
-    # Get spatial indices.
+    # Get spatial indices
     I, J = np.where((glt_image[0,:,:]>=0)&(glt_image[1,:,:]>=0))
     ortho_dem_image = np.zeros((glt_header['lines'], glt_header['samples']), dtype='float32')
 
-    # Orthorectify DEM.
+    # Orthorectify DEM
     fid = open(ortho_dem_image_file, 'wb')
     ortho_dem_image[:,:] = -1000.0
     ortho_dem_image[I,J] = igm_image[2, glt_image[0,I,J], glt_image[1,I,J]]
@@ -147,7 +147,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
     glt_image.flush()
     del igm_image, glt_image
 
-    # Write header.
+    # Write header
     ortho_dem_header = empty_envi_header()
     ortho_dem_header['description'] = 'Geo-rectified DEM, in [m]'
     ortho_dem_header['file type'] = 'ENVI Standard'
@@ -186,7 +186,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read radiance image.
+    # Read radiance image
     rdn_header = read_envi_header(rdn_image_file+'.hdr')
     rdn_image = np.memmap(rdn_image_file,
                           dtype='float32',
@@ -195,7 +195,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
                                  rdn_header['bands'],
                                  rdn_header['samples']))
 
-    # Read GLT image.
+    # Read GLT image
     glt_header = read_envi_header(glt_image_file+'.hdr')
     glt_image = np.memmap(glt_image_file,
                           dtype=np.int32,
@@ -205,11 +205,11 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
                                  glt_header['lines'],
                                  glt_header['samples']))
 
-    # Get spatial indices.
+    # Get spatial indices
     I, J = np.where((glt_image[0,:,:]>=0)&(glt_image[1,:,:]>=0))
     ortho_image = np.zeros((glt_header['lines'], glt_header['samples']), dtype='float32')
 
-    # Orthorectify radiance.
+    # Orthorectify radiance
     fid = open(ortho_rdn_image_file, 'wb')
     info = 'Band (max=%d): ' %rdn_header['bands']
     for band in range(rdn_header['bands']):
@@ -226,7 +226,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
     glt_image.flush()
     del rdn_image, glt_image
 
-    # Write header.
+    # Write header
     ortho_rdn_header = empty_envi_header()
     ortho_rdn_header['description'] = 'Geo-rectified radiance, in [mW/(cm2*um*sr)]'
     ortho_rdn_header['file type'] = 'ENVI Standard'

@@ -46,23 +46,23 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
     from Geography import define_wgs84_crs
     from scipy     import optimize
 
-    # Read IMU and GPS data.
+    # Read IMU & GPS data
     imugps = np.loadtxt(imugps_file) # ID, X, Y, Z, R, P, H, Timestamp, Longitude, Latitude, Grid_Convergence, Roll...
 
-    # Read sensor model data.
+    # Read sensor model data
     sensor_model = np.loadtxt(sensor_model_file, skiprows=1)[:,1:]
 
-    # Read DEM data.
+    # Read DEM data
     ds = gdal.Open(dem_image_file, gdal.GA_ReadOnly)
     dem_image = ds.GetRasterBand(1).ReadAsArray()
     dem_geotransform = ds.GetGeoTransform()
     dem_prj = ds.GetProjection()
     ds = None
 
-    # Read GCP data.
+    # Read GCP data
     gcp_data = np.loadtxt(gcp_file, comments=';') # Longitude, Latitude, Image Column, Image Row
 
-    # Convert gcp longitudes and latitudes to map x and y.
+    # Convert GCP longitudes & latitudes to map coordinates
     wgs84_crs = define_wgs84_crs()
     map_crs = osr.SpatialReference()
     map_crs.ImportFromWkt(dem_prj)
@@ -70,7 +70,7 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
     gcp_xyz = np.array(transform.TransformPoints(gcp_data[:,:2]))
     del wgs84_crs, transform
 
-    # Interpolate flight imu and xyz.
+    # Interpolate platform positions & attitudes
     lines = np.arange(imugps.shape[0])
     flight_xyz = np.zeros((gcp_data.shape[0], 3))
     flight_xyz[:,0] = np.interp(gcp_data[:,3]-1, lines, imugps[:,1])
@@ -82,18 +82,18 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
     flight_imu[:,1] = np.interp(gcp_data[:,3]-1, lines, imugps[:,5])
     flight_imu[:,2] = np.interp(gcp_data[:,3]-1, lines, imugps[:,6])
 
-    # Apply grid convergence.
+    # Apply grid convergence to platform headings
     flight_imu[:,2] = flight_imu[:,2]-np.interp(gcp_data[:,3]-1, lines, imugps[:,11])
     del lines
 
-    # Interpolate sensor model.
+    # Interpolate sensor model
     samples = np.arange(sensor_model.shape[0])
     flight_sensor_model = np.zeros((gcp_data.shape[0], 2))
     flight_sensor_model[:,0] = np.interp(gcp_data[:,2]-1, samples, sensor_model[:,0])
     flight_sensor_model[:,1] = np.interp(gcp_data[:,2]-1, samples, sensor_model[:,1])
     del samples
 
-    # Optimize.
+    # Optimize
     p = optimize.minimize(cost_fun,
                           [0,0,0,0],
                           method='L-BFGS-B',
@@ -105,7 +105,7 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
                                 boresight_options))
     logger.info('Roll, pitch, heading and altitude offsets: %s, %s, %s, %s' %(p.x[0], p.x[1], p.x[2], p.x[3]))
 
-    # Save offsets.
+    # Save offsets
     imugps[:,7] = p.x[0]
     imugps[:,8] = p.x[1]
     imugps[:,9] = p.x[2]
@@ -119,7 +119,7 @@ def boresight_calibration(boresight_file, gcp_file, imugps_file, sensor_model_fi
                header='\n'.join(header),
                fmt='%d    %.3f    %.3f    %.3f    %.10f    %.10f    %.10f    %.10f    %.10f    %.10f    %.10f    %.10f    %.10f    %.10f    %.5f')
 
-    # Estimate geometric correction accuracy.
+    # Estimate geometric correction accuracy
     est_gcp_xyz = estimate_gcp_xyz(p.x, flight_xyz, flight_imu, flight_sensor_model, dem_image, [dem_geotransform[0], dem_geotransform[3]], dem_geotransform[1], boresight_options)
     boresight_data = np.zeros((gcp_data.shape[0], 10))
     boresight_data[:,0] = np.arange(gcp_data.shape[0])
@@ -176,10 +176,10 @@ def cost_fun(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem
         Boresight offset options, true or false.
     """
 
-    # Estimate GCP map coordinates.
+    # Estimate GCP map coordinates
     est_gcp_xyz = estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_model, dem_image, dem_ulxy, dem_pixel_size, boresight_options)
 
-    # Calculate cost.
+    # Calculate cost
     cost = np.sum((est_gcp_xyz[:,:2]-gcp_xyz[:,:2])**2)
 
     return cost
@@ -215,7 +215,7 @@ def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_mo
 
     from GeoReferencing import ray_tracing
 
-    # Initialize.
+    # Initialize
     n_gcps = flight_xyz.shape[0]
     roll = flight_imu[:,0]+boresight_offsets[0] if boresight_options[0] else flight_imu[:,0]
     pitch = flight_imu[:,1]+boresight_offsets[1] if boresight_options[1] else flight_imu[:,1]
@@ -224,10 +224,10 @@ def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_mo
     y = flight_xyz[:,1]
     z = flight_xyz[:,2]+boresight_offsets[3] if boresight_options[3] else flight_xyz[:,2]
 
-    # Get scan vectors.
-    heading[heading<0] = heading[heading<0]+360 # heading: -180~180 -> 0~360
-    heading = 90-heading # heading angle -> euler angle
-    pitch = -pitch # pitch angle -> euler angle
+    # Get scan vectors
+    heading[heading<0] = heading[heading<0]+360 # Heading: -180~180 -> 0~360
+    heading = 90-heading # Heading angle -> Euler angle
+    pitch = -pitch # Pitch angle -> Euler angle
 
     roll = np.deg2rad(roll)
     pitch = np.deg2rad(pitch)
@@ -264,7 +264,7 @@ def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_mo
 
     del roll, pitch, heading, R, P, H, M
 
-    # Get start and end points of ray tracing.
+    # Get start & end points of ray-tracing
     h_min = dem_image.min()
     h_max = dem_image.max()
     xyz0 = np.ones(flight_xyz.shape) # shape=(3, n_gcps)
@@ -277,7 +277,7 @@ def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_mo
     xyz1[:,2] = h_min
     del h_min, h_max
 
-    # Ray-tracing.
+    # Do ray-tracing
     gcp_xyz = np.zeros((n_gcps,3))
     for i in range(n_gcps):
         gcp_xyz[i,0], gcp_xyz[i,1], gcp_xyz[i,2] = ray_tracing(xyz0[i,:], xyz1[i,:], L0[:,i], dem_image, dem_ulxy, dem_pixel_size)

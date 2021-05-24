@@ -38,7 +38,7 @@ def plot_angle_geometry(angle_geometry_figure_file, sca_image_file):
 
     from ENVI import read_envi_header
 
-    # Read sca image data.
+    # Read SCA image data
     sca_header = read_envi_header(os.path.splitext(sca_image_file)[0]+'.hdr')
     sca_image = np.memmap(sca_image_file,
                           dtype='float32',
@@ -46,14 +46,14 @@ def plot_angle_geometry(angle_geometry_figure_file, sca_image_file):
                           offset=0,
                           shape=(sca_header['bands'], sca_header['lines'], sca_header['samples']))
 
-    # Scatter-plot view geometry.
+    # Scatter-plot view geometry
     plt.figure(figsize=(10, 10))
     ax = plt.subplot(111, projection='polar')
     ax.scatter(np.deg2rad(sca_image[1,::10,::10].flatten()), sca_image[0,::10,::10].flatten(), color='green', marker='.',s=10)
     sca_image.flush()
     del sca_image
 
-    # Scatter-plot sun geometry.
+    # Scatter-plot solar geometry
     ax.scatter(np.deg2rad(float(sca_header['sun azimuth'])), float(sca_header['sun zenith']), color='red', marker='*', s=500)
     ax.set_theta_direction(-1)
     ax.set_theta_zero_location('N')
@@ -87,13 +87,13 @@ def plot_image_area(image_area_figure_file, dem_image_file, igm_image_file, imug
 
     from ENVI import read_envi_header
 
-    # Read DEM.
+    # Read DEM
     ds = gdal.Open(dem_image_file, gdal.GA_ReadOnly)
     dem_image = ds.GetRasterBand(1).ReadAsArray()
     dem_geotransform = ds.GetGeoTransform()
     ds = None
 
-    # Read IGM.
+    # Read IGM
     igm_header = read_envi_header(os.path.splitext(igm_image_file)[0]+'.hdr')
     igm_image = np.memmap(igm_image_file,
                           dtype='float64',
@@ -105,7 +105,7 @@ def plot_image_area(image_area_figure_file, dem_image_file, igm_image_file, imug
     igm_image.flush()
     del igm_image
 
-    # Read IMUGPS
+    # Read IMU & GPS
     imugps = np.loadtxt(imugps_file)
 
     # Make a plot
@@ -181,7 +181,7 @@ def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
     from ENVI    import read_envi_header
     from Spectra import get_closest_wave
 
-    # Read radiance image data.
+    # Read radiance image data
     rdn_header = read_envi_header(os.path.splitext(rdn_image_file)[0]+'.hdr')
     rdn_image = np.memmap(rdn_image_file,
                           dtype='float32',
@@ -190,7 +190,7 @@ def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
                                  rdn_header['bands'],
                                  rdn_header['samples']))
 
-    # Get RGB bands.
+    # Get RGB bands
     if rdn_header['default bands'] is not None:
         rgb_bands = rdn_header['default bands']
     else:
@@ -206,7 +206,7 @@ def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
                 rgb_bands.append(band)
         del band, wave
 
-    # Read GLT image.
+    # Read GLT image
     glt_header = read_envi_header(os.path.splitext(glt_image_file)[0]+'.hdr')
     glt_image = np.memmap(glt_image_file,
                           dtype=np.int32,
@@ -215,7 +215,7 @@ def make_quicklook(quicklook_figure_file, rdn_image_file, glt_image_file):
                                  glt_header['lines'],
                                  glt_header['samples']))
 
-    # Write RGB image.
+    # Write RGB image
     driver = gdal.GetDriverByName('GTiff')
     ds = driver.Create(quicklook_figure_file,
                        glt_header['samples'],
@@ -300,11 +300,11 @@ def plot_wvc_model(wvc_model_figure_file, wvc_model_file):
 
     import json
 
-    # Read the WVC model.
+    # Read WVC model
     wvc_models = json.load(open(wvc_model_file, 'r'))
     colors = ['red', 'green', 'blue']
 
-    # Plot the model.
+    # Plot model
     plt.figure(figsize=(10, 6))
     for i, model_name in enumerate(wvc_models.keys()):
         model = wvc_models[model_name]

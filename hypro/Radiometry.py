@@ -38,7 +38,7 @@ def make_radio_cali_file_Hyspex(radio_cali_file, dn_image_file, setting_file):
     from Spectra import estimate_fwhms_from_waves
     from scipy    import constants
 
-    # Read meatadata from the raw Hyspex image.
+    # Read metadata from raw HySpex image
     header = dict()
     try:
         fid = open(dn_image_file, 'rb')
@@ -155,7 +155,7 @@ def make_radio_cali_file_Hyspex(radio_cali_file, dn_image_file, setting_file):
 
     fid.close()
 
-    # Convert int8array to string.
+    # Convert int8 array to string
     def from_int8array_to_string(int8_array):
         string = ''
         for int8_value in int8_array:
@@ -167,39 +167,39 @@ def make_radio_cali_file_Hyspex(radio_cali_file, dn_image_file, setting_file):
         if header[key].dtype.name == 'int8':
             header[key] = from_int8array_to_string(header[key])
 
-    # Replace QE, wavelength and RE values if the setting file exists.
+    # Replace QE, wavelength & RE values if setting file exists
     if setting_file is not None:
         setting = get_hyspex_setting(setting_file)
         header['QE'] = np.array(setting['QE'])
         header['spectralVector'] = np.array(setting['spectral_calib'])
         header['RE'] = np.array(setting['RE']).reshape((setting['spectral_size'], setting['spatial_size']))
 
-    # Calculate other values.
+    # Calculate other values
     header['spectralSampling'] = np.diff(header['spectralVector'])
     header['spectralSampling'] = np.append(header['spectralSampling'], header['spectralSampling'][-1])
     header['solidAngle'] = header['pixelSizeX']*header['pixelSizeY']
     header['satValue'] = np.power(2, 16.0-header['bitshift']) - 1
     header['fwhms'] = estimate_fwhms_from_waves(header['spectralVector'])
 
-    # Calculate gain and offset coefficents.
+    # Calculate gain & offset coefficients
     fid = open(radio_cali_file, 'wb')
 
-    # gain
+    # Gain
     h = constants.Planck # Planck constant
-    c = constants.c*1e+9 # Light speed in nm/s
-    SF = header['SF'] # float
-    RE = header['RE'] # shape=(bands, samples)
-    QE = np.expand_dims(header['QE'], axis=1) # shape=(bands, 1)
+    c = constants.c*1e+9 # Light speed, in [nm/s]
+    SF = header['SF'] # Image data scaling factor, float
+    RE = header['RE'] # Relative efficiency, shape=(bands, samples)
+    QE = np.expand_dims(header['QE'], axis=1) # Quantum efficiency, shape=(bands, 1)
     center_wavelength = np.expand_dims(header['spectralVector'], axis=1) # shape=(bands, 1)
     wavelength_interval = np.expand_dims(header['spectralSampling'], axis=1) # shape=(bands, 1)
     integration_time = header['integrationTime'] # float
     aperture_area = np.pi*header['apertureSize']*header['apertureSize'] # float
-    solid_angle = header['solidAngle']# float
+    solid_angle = header['solidAngle'] # float
     gain = h*c*1e6/(RE*QE*SF*integration_time*aperture_area*solid_angle*wavelength_interval*center_wavelength)*100.0 # shape=(bands, samples); 100.0 to convert radiance to mW/(cm2*um*sr).
     fid.write(gain.astype('float64').tostring())
     del h, c, SF, RE, QE, center_wavelength, wavelength_interval, integration_time, aperture_area, solid_angle, gain
 
-    # offset
+    # Offset
     fid.write(header['background'].tostring())
     if header['serialNumber']>=3000 and header['serialNumber']<=5000:
         fid.write(header['backgroundLast'].tostring())
@@ -208,7 +208,7 @@ def make_radio_cali_file_Hyspex(radio_cali_file, dn_image_file, setting_file):
         bands = 2
     fid.close()
 
-    # Write header.
+    # Write header
     radio_cali_header = empty_envi_header()
     radio_cali_header = empty_envi_header()
     radio_cali_header['description'] = 'Hyspex radiometric calibration coefficients.'
@@ -249,7 +249,7 @@ def dn2rdn_Hyspex(rdn_image_file, dn_image_file, radio_cali_file, acquisition_ti
 
     from ENVI  import empty_envi_header, read_envi_header, write_envi_header
 
-    # Read calibration coefficients.
+    # Read calibration coefficients
     radio_cali_header = read_envi_header(os.path.splitext(radio_cali_file)[0]+'.hdr')
     radio_cali_coeff = np.memmap(radio_cali_file,
                                 dtype='float64',
@@ -260,7 +260,7 @@ def dn2rdn_Hyspex(rdn_image_file, dn_image_file, radio_cali_file, acquisition_ti
     wavelengths = np.array([float(v) for v in radio_cali_header['waves'].split(',')])
     fwhms = np.array([float(v) for v in radio_cali_header['fwhms'].split(',')])
 
-    # Read DN image.
+    # Read DN image
     dn_header = read_envi_header(os.path.splitext(dn_image_file)[0]+'.hdr')
     dn_image = np.memmap(dn_image_file,
                          dtype='uint16',
@@ -270,19 +270,19 @@ def dn2rdn_Hyspex(rdn_image_file, dn_image_file, radio_cali_file, acquisition_ti
                                 dn_header['bands'],
                                 dn_header['samples']))
 
-    # Get gain coefficients.
+    # Get gain coefficients
     gain = radio_cali_coeff[0,:,:] # shape=(bands, samples)
 
-    # Do radiometric calibration.
+    # Do radiometric calibration
     info = 'Line (max=%d): ' %dn_header['lines']
     fid = open(rdn_image_file, 'wb')
     for from_line in range(0, dn_header['lines'], 500):
         info += '%d, ' %(from_line+1)
 
-        # Determine chunck size.
+        # Determine chunk size
         to_line = min(from_line+500, dn_header['lines'])
 
-        # Get offset coefficients.
+        # Get offset coefficients
         if radio_cali_header['bands']==2:
             offset = radio_cali_coeff[1,:,:] # shape=(bands, samples)
         else:
@@ -292,25 +292,25 @@ def dn2rdn_Hyspex(rdn_image_file, dn_image_file, radio_cali_file, acquisition_ti
             offset = background+(backgroundLast-background)*factor[:,np.newaxis, np.newaxis] # shape=(to_line-from_line, bands, samples)
             del background, backgroundLast, factor
 
-        # Convert DN to radiance.
+        # Convert DN to radiance
         rdn = (dn_image[from_line:to_line,:,:].astype('float32')-offset)*gain # shape=(to_line-from_line, bands, samples)
 
-        # Write radiance to the file.
+        # Write radiance to file
         fid.write(rdn.astype('float32').tostring())
 
-        # Clear temporary data.
+        # Clear temporary data
         del rdn, to_line, offset
     fid.close()
     info += '%d, Done!' %dn_header['lines']
     logger.info(info)
 
-    # Clear data.
+    # Clear data
     dn_image.flush()
     radio_cali_coeff.flush()
     del gain, from_line
     del dn_image, radio_cali_coeff
 
-    # Write header.
+    # Write header
     rdn_header = empty_envi_header()
     rdn_header['description'] = 'Hyspex radiance in mW/(cm2*um*sr)'
     rdn_header['file type'] = 'ENVI Standard'
@@ -352,7 +352,7 @@ def resample_rdn(resampled_rdn_image_file, raw_rdn_image_file, smile_effect_file
     from ENVI  import read_envi_header, write_envi_header
     from scipy import interpolate
 
-    # Read the old radiance image.
+    # Read raw radiance image
     raw_rdn_header = read_envi_header(os.path.splitext(raw_rdn_image_file)[0]+'.hdr')
     raw_rdn_image = np.memmap(raw_rdn_image_file,
                               dtype='float32',
@@ -361,7 +361,7 @@ def resample_rdn(resampled_rdn_image_file, raw_rdn_image_file, smile_effect_file
                                      raw_rdn_header['bands'],
                                      raw_rdn_header['samples']))
 
-    # Read spectral center wavelengths and bandwidths.
+    # Read spectral center wavelengths & bandwidths
     smile_effect_header = read_envi_header(os.path.splitext(smile_effect_file)[0]+'.hdr')
     smile_effect_data = np.memmap(smile_effect_file,
                                   dtype='float32',
@@ -370,18 +370,18 @@ def resample_rdn(resampled_rdn_image_file, raw_rdn_image_file, smile_effect_file
                                          smile_effect_header['lines'],
                                          smile_effect_header['samples']))
 
-    # Do spectral interpolation.
+    # Do spectral interpolation
     info = 'Line (max=%d): ' %smile_effect_header['lines']
     fid = open(resampled_rdn_image_file, 'wb')
     for from_line in range(0, raw_rdn_header['lines'], 500):
         info += '%d, ' %(from_line+1)
-        # Determine chunck size.
+        # Determine chunk size
         to_line = min(from_line+500, raw_rdn_header['lines'])
 
-        # Initialize.
+        # Initialize
         rdn = np.zeros((to_line-from_line,raw_rdn_header['bands'],raw_rdn_header['samples'])) # shape=(from_line:to_line, bands, samples)
 
-        # Do spectral interpolation.
+        # Do spectral interpolation
         for sample in range(raw_rdn_header['samples']):
             f = interpolate.interp1d(smile_effect_data[0,:,sample],
                                      raw_rdn_image[from_line:to_line,:,sample],
@@ -391,19 +391,19 @@ def resample_rdn(resampled_rdn_image_file, raw_rdn_image_file, smile_effect_file
             rdn[:,:,sample] = f(raw_rdn_header['wavelength'])
             del f
 
-        # Write interpolated radiance into the file.
+        # Write interpolated radiance to file
         fid.write(rdn.astype('float32').tostring())
         del rdn, to_line
     fid.close()
     info += '%d, Done!' %smile_effect_header['lines']
     logger.info(info)
 
-    # Clear data.
+    # Clear data
     del smile_effect_data
     raw_rdn_image.flush()
     del raw_rdn_image
 
-    # Write the header.
+    # Write header
     write_envi_header(os.path.splitext(resampled_rdn_image_file)[0]+'.hdr', raw_rdn_header)
     del raw_rdn_header
 
@@ -481,17 +481,17 @@ def get_hyspex_setting(setting_file):
     while line:
         if "=" in line:
             key, value = line.split("=", 1)
-            # Add field if not in the default list.
+            # Add field if not in the default list
             if key.strip() not in setting_value_type.keys():
                 setting_value_type[key.strip()] = 'str'
-            # Keep reading if value is ''.
+            # Keep reading if value is an empty string
             if value.strip() == '':
                 line = fid.readline()
                 while (not "=" in line) and (not line.strip() is ''):
                     value += line
                     line = fid.readline()
                 flag = False
-            # Extract values.
+            # Extract values
             val_type = setting_value_type[key.strip()]
             if val_type == "list_float":
                 tmp = value.translate(trans_table).strip().split(" ")
