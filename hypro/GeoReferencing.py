@@ -17,8 +17,10 @@ import numpy as np
 from osgeo import gdal
 from numba import guvectorize, jit
 
-
 logger = logging.getLogger(__name__)
+
+# Disable DEBUG-level log messages from `numba`
+logging.getLogger('numba').setLevel(logging.INFO)
 
 warnings.filterwarnings("ignore")
 
