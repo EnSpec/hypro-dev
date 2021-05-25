@@ -30,7 +30,7 @@ def prepare_imugps_Hyspex(processed_imugps_file, raw_imugps_file, boresight_offs
     map_crs: osr object
         Map coordinate system.
     """
-
+    
     if os.path.exists(processed_imugps_file):
         logger.info('Write the IMU and GPS data to %s.' %processed_imugps_file)
         return

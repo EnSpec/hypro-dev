@@ -150,6 +150,7 @@ from GeoRectification import orthorectify_rdn, orthorectify_dem, orthorectify_sc
 from ImageMerging     import merge_dem_sca, merge_rdn
 from VIS              import estimate_vis
 from AtmCorr          import atm_corr_image
+from Solar            import get_sun_angles, get_sun_earth_distance
 
 
 def get_flight_indices(config):
@@ -379,29 +380,6 @@ def get_acquisition_time(dn_header_file, raw_imugps_file):
     when = epoch+time_elapsed
 
     return when
-
-
-def get_sun_earth_distance(when):
-    """ Get sun-earth distance of a day.
-
-    Parameters
-    ----------
-    when: datetime object
-        Date and time.
-
-    Returns
-    -------
-    d: float
-        Sun-Earth distance.
-    """
-
-    import numpy as np
-    cur_dir = os.path.dirname(os.path.realpath(__file__))
-    d = np.loadtxt(os.path.join(cur_dir, 'data/sun-earth-distance.dat'))
-    doy = when.timetuple().tm_yday
-    d = d[doy-1]
-
-    return d
 
 
 def HyspexPro(config_file):
