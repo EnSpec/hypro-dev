@@ -13,6 +13,9 @@ import os
 import logging
 
 import numpy as np
+from numba import njit, stencil
+
+from ENVI import read_envi_header
 
 logger = logging.getLogger(__name__)
 
@@ -383,6 +386,7 @@ def resample_rdn(resampled_rdn_image_file, raw_rdn_image_file, smile_effect_file
 
         # Do spectral interpolation
         for sample in range(raw_rdn_header['samples']):
+            # NOTE: No NaN values may be present in the input!
             f = interpolate.interp1d(smile_effect_data[0,:,sample],
                                      raw_rdn_image[from_line:to_line,:,sample],
                                      kind='cubic',
@@ -518,3 +522,102 @@ def get_hyspex_setting(setting_file):
             line = fid.readline()
     fid.close()
     return setting
+
+def bad_detectors_from_hyspex_set(cali_set):
+    with open(cali_set, 'r') as f:
+        while True:
+            try:
+                line = f.readline()
+                if 'spatial_size =' in line:
+                    spatial_size = int(line.split('=')[1])
+                if 'bad_pixels =' in line:
+                    bad_pixels = [(int(i)//spatial_size,
+                                   (int(i)%spatial_size)-1)
+                                    for i in f.readlines()]
+                    return bad_pixels
+            except StopIteration:
+                return
+
+@njit
+def interpolate_column_avg_radiance(values, wavels, step=1):
+    ''' Interpolate column-averaged radiance. For the `i`th column,
+         use radiance from columns `i-step` and `i+step` as endpoints
+         for linear interpolation at the central wavelength of column `i`.
+    '''
+    
+    bands, cols = values.shape
+    output = np.empty_like(values)
+    
+    for i in range(bands):
+        for j in range(cols):
+            # Marginal bands are written as zeros
+            if i < step or i >= bands-step:
+                output[i,j] = 0
+                continue
+            # Get center wavelength
+            wavelength = wavels[i]
+            # Get neighbor wavelenths & values, i.e. (x,y) coordinates
+            neighbor_wavels = [wavels[i-step], wavels[i+step]]
+            neighbor_values = [values[i-step,j], values[i+step,j]]
+            # Interpolate at center wavelength
+            output[i,j] = np.interp(wavelength, neighbor_wavels, neighbor_values)
+            
+    return output
+
+
+@stencil
+def apply_bad_detector_criteria(diff, threshold=None):
+    ''' Flag bad detectors by comparing differences between observed
+         and predicted (interpolated) radiance averaged over all
+         scanlines. The criteria for a bad detector are:
+         
+         1) Both the central column and the flanking columns (i.e.
+             those representing the interpolation endpoints) must
+             be greater in magnitude than the specified threshold.
+         2) The flanking columns must share the same sign (+/-),
+             while the central column must have the opposite sign.
+        
+        NOTE: At present, only step size 1 is supported, i.e. bad
+            detectors must be identified by interpolation from the
+            nearest neighbors. This could be problematic if two
+            bad detectors were adjacent in the same column.
+    '''
+    
+    # If no cutoff is given, estimate as the 0.99 quantile over all columns
+    if threshold is None: threshold = np.quantile(diff, 0.99)
+        
+    # Differences for each cell
+    last_cell = diff[-1,0]
+    this_cell = diff[ 0,0]
+    next_cell = diff[ 1,0]
+    
+    # Casting to `np.array` seems to be required for proper ufunc resolution
+    cells = np.array([this_cell, last_cell, next_cell])
+    
+    # Require that magnitudes of all cells exceed the threshold
+    if np.all(np.abs(cells) > threshold):
+        # Require that flanking cells have the same sign as each other,
+        #  but opposite the sign of the central cell
+        if (this_cell > 0) != (last_cell > 0) == (next_cell > 0):
+            return 1
+        else:
+            return 0
+    else:
+       return 0
+
+
+def identify_bad_detectors(rdn_image, hdr, step=1, threshold=None):
+    ''' Identify faulty detectors from radiance image. '''
+    # Average radiance by column
+    col_avgs = np.nanmean(rdn_image, axis=0)
+    # Get image wavelengths
+    wavelengths = np.array(hdr['wavelength'], dtype=col_avgs.dtype)
+    # Interpolate column-averaged radiance from neighbors
+    interpolated = interpolate_column_avg_radiance(col_avgs, wavelengths, step=step)
+    # Compare interpolated values to measured
+    difference = col_avgs-interpolated
+    # Apply criteria to identify bad detectors
+    bad_detectors = apply_bad_detector_criteria(difference, threshold)
+    bad_detectors = list(zip(*np.where(bad_detectors)))
+    
+    return bad_detectors

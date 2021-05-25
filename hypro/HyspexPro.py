@@ -151,6 +151,7 @@ from ImageMerging     import merge_dem_sca, merge_rdn
 from VIS              import estimate_vis
 from AtmCorr          import atm_corr_image
 from Solar            import get_sun_angles, get_sun_earth_distance
+from Interpolate      import interpolate_detectors
 
 
 def get_flight_indices(config):
@@ -549,6 +550,10 @@ def HyspexPro(config_file):
                           sensor_dict['dn_image_file'],
                           sensor_dict['radio_cali_coeff_file'],
                           flight_dict['acquisition_time'])
+            
+            # Interpolate radiance for faulty detectors
+            flight_log.info('Interpolate radiance at bad detectors from neighboring wavelengths.')
+            interpolate_detectors(sensor_dict)
 
             # Make a quicklook
             flight_log.info('Make a quicklook.')
