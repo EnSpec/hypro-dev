@@ -225,9 +225,9 @@ def estimate_gcp_xyz(boresight_offsets, flight_xyz, flight_imu, flight_sensor_mo
     z = flight_xyz[:,2]+boresight_offsets[3] if boresight_options[3] else flight_xyz[:,2]
 
     # Get scan vectors
-    heading[heading<0] = heading[heading<0]+360 # Heading: -180~180 -> 0~360
+    heading[heading<0] += 360 # Heading: -180~180 -> 0~360
     heading = 90-heading # Heading angle -> Euler angle
-    pitch = -pitch # Pitch angle -> Euler angle
+    pitch *= -1 # Pitch angle -> Euler angle
 
     roll = np.deg2rad(roll)
     pitch = np.deg2rad(pitch)

@@ -63,8 +63,8 @@ def estimate_vis(vis_file, ddv_file, atm_lut_file, rdn_file, sca_file, backgroun
     swir2_wave, swir2_band = get_closest_wave(rdn_header['wavelength'], 2130)
 
     # Determine sensor type
-    if_vnir =  abs(red_wave-660)<20 and abs(nir_wave-850)<20
-    if_swir =  abs(swir1_wave-1650)<20 or abs(swir2_wave-2130)<20
+    if_vnir = abs(red_wave-660)<20 and abs(nir_wave-850)<20
+    if_swir = abs(swir1_wave-1650)<20 or abs(swir2_wave-2130)<20
 
     if if_vnir and if_swir:
         logger.info('Both VNIR and SWIR bands are used for estimating visibility.')

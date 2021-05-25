@@ -474,9 +474,9 @@ def get_scan_vectors(imu, sensor_model):
     n_detectors = sensor_model.shape[0]
 
     # Navigational standard angles -> Euler angles
-    heading[heading<0] = heading[heading<0]+360 # Heading: -180~180 -> 0~360
+    heading[heading<0] += 360 # Heading: -180~180 -> 0~360
     heading = 90-heading # Heading angle -> Euler angle
-    pitch = -pitch # Pitch angle -> Euler angle
+    pitch *= -1 # Pitch angle -> Euler angle
 
     # [degree] to [radian]
     roll = np.deg2rad(roll)

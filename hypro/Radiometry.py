@@ -473,6 +473,7 @@ def get_hyspex_setting(setting_file):
                           "RE": "list_float",
                           "QE": "list_float",
                           "bad_pixels": "list_int"}
+    
     trans_table = str.maketrans("\n"," ")
     setting = dict()
     fid = open(setting_file, 'r')
@@ -487,7 +488,7 @@ def get_hyspex_setting(setting_file):
             # Keep reading if value is an empty string
             if value.strip() == '':
                 line = fid.readline()
-                while (not "=" in line) and (not line.strip() is ''):
+                while (not "=" in line) and (not line.strip() == ''):
                     value += line
                     line = fid.readline()
                 flag = False
