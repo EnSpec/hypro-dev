@@ -44,27 +44,32 @@ def atm_corr_band(atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA, atm_lut,
     from scipy.interpolate import RegularGridInterpolator
 
     # Interpolate the lookup table
-    pts = np.array([wvc_image[~bg_mask], vis_image[~bg_mask], vza_image[~bg_mask], raa_image[~bg_mask]]).T
+    idx = ~bg_mask
+    pts = np.array([wvc_image[idx], vis_image[idx], vza_image[idx], raa_image[idx]]).T
+    
+    interp_params = (atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA)
+    
+    def alt_interpolator(alt):
+        return RegularGridInterpolator(interp_params, alt)
+    
+    # Calculate interpolated radiance at albedo [0.0, 0.5, 1.0]
+    rdn_000 = alt_interpolator(atm_lut[0])(pts)
+    rdn_050 = alt_interpolator(atm_lut[1])(pts)-rdn_000
+    rdn_100 = alt_interpolator(atm_lut[2])(pts)-rdn_000
 
-    interp_fun = RegularGridInterpolator((atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA), atm_lut[0,...])
-    interp_rdn_000 = interp_fun(pts)
-    interp_fun = RegularGridInterpolator((atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA), atm_lut[1,...])
-    interp_rdn_050 = interp_fun(pts)-interp_rdn_000
-
-    interp_fun = RegularGridInterpolator((atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA), atm_lut[2,...])
-    interp_rdn_100 = interp_fun(pts)-interp_rdn_000
-
-    del interp_fun, pts
+    del alt_interpolator, pts
 
     # Do atmospheric corrections
-    L0 = interp_rdn_000
-    S = (interp_rdn_100-2*interp_rdn_050)/(interp_rdn_100-interp_rdn_050+1e-10)
-    F = interp_rdn_100*(1-S)
+    S = (rdn_100-2*rdn_050)/(rdn_100-rdn_050+1e-10)
+    F = rdn_100*(1-S)
+    A = rdn_image[idx]-rdn_000
     rho = np.zeros(rdn_image.shape)
-    rho[~bg_mask] = (rdn_image[~bg_mask]-L0)/(F+S*(rdn_image[~bg_mask]-L0))
+    rho[idx] = A/(F+S*A)
 
     # Clear data
-    del L0, S, F, interp_rdn_000, interp_rdn_050, interp_rdn_100
+    del idx
+    del A, S, F
+    del rdn_000, rdn_050, rdn_100
 
     return rho
 
@@ -91,6 +96,7 @@ def atm_corr_image(flight_dict):
     # Read atmospheric lookup table
     atm_lut_metadata = read_binary_metadata(flight_dict['resampled_atm_lut_file']+'.meta')
     atm_lut_metadata['shape'] = tuple([int(v) for v in atm_lut_metadata['shape']])
+    
     atm_lut_WVC = np.array([float(v) for v in atm_lut_metadata['WVC']])
     atm_lut_VIS = np.array([float(v) for v in atm_lut_metadata['VIS']])
     atm_lut_VZA = np.array([float(v) for v in atm_lut_metadata['VZA']])
@@ -115,6 +121,7 @@ def atm_corr_image(flight_dict):
     raa_image = saa-sca_image[1,:,:]
     raa_image[raa_image<0] += 360.0
     raa_image[raa_image>180] = 360.0-raa_image[raa_image>180]
+    
     # Clear data
     sca_image.flush()
     del sca_header, saa
@@ -149,22 +156,35 @@ def atm_corr_image(flight_dict):
                         shape=(bg_header['lines'],
                                bg_header['samples']))
 
-    wvc_image[wvc_image>=atm_lut_WVC.max()] = atm_lut_WVC.max()-0.1
-    vis_image[vis_image>=atm_lut_VIS.max()] = atm_lut_VIS.max()-0.1
-    vza_image[vza_image>=atm_lut_VZA.max()] = atm_lut_VZA.max()-0.1
-    raa_image[raa_image>=atm_lut_RAA.max()] = atm_lut_RAA.max()-0.1
+    idx = ~bg_mask
+    
+    max_WVC = atm_lut_WVC.max()
+    max_VIS = atm_lut_VIS.max()
+    max_VZA = atm_lut_VZA.max()
+    max_RAA = atm_lut_RAA.max()
+    
+    # Enforce cutoffs in ALT parameters
+    wvc_image[wvc_image>=max_WVC] = max_WVC-0.1
+    vis_image[vis_image>=max_VIS] = max_VIS-0.1
+    vza_image[vza_image>=max_VZA] = max_VZA-0.1
+    raa_image[raa_image>=max_RAA] = max_RAA-0.1
 
-    # Remove outliers in WVC & VIS
-    avg_wvc = wvc_image[~bg_mask].mean()
-    std_wvc = wvc_image[~bg_mask].std()
-    index = (np.abs(wvc_image-avg_wvc)>2*std_wvc)&(~bg_mask)
-    wvc_image[index] = avg_wvc
-
-    avg_vis = vis_image[~bg_mask].mean()
-    std_vis = vis_image[~bg_mask].std()
-    index = (np.abs(vis_image-avg_vis)>2*std_vis)&(~bg_mask)
-    vis_image[index] = avg_vis
-    del index
+    del max_WVC, max_VIS, max_VZA, max_RAA
+    
+    # Remove outliers in WVC and VIS
+    wvc = wvc_image[idx]
+    avg_wvc = wvc.mean()
+    std_wvc = wvc.std()
+    wvc_image[(np.abs(wvc_image-avg_wvc) > 2*std_wvc)&(~bg_mask)] = avg_wvc
+    del wvc
+    
+    vis = vis_image[idx]
+    avg_vis = vis.mean()
+    std_vis = vis.std()
+    vis_image[(np.abs(vis_image-avg_vis)>2*std_vis)&(~bg_mask)] = avg_vis
+    del vis
+    
+    del idx
 
     fid = open(flight_dict['refl_file'], 'wb')
     # Do atmospheric correction
