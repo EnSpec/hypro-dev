@@ -112,6 +112,10 @@ def estimate_vis(vis_file, ddv_file, atm_lut_file, rdn_file, sca_file, backgroun
     raa_image = saa-sca_image[1,:,:]
     raa_image[raa_image<0] += 360.0
     raa_image[raa_image>180] = 360.0-raa_image[raa_image>180]
+    # Constrain RAA within bounds of ALT
+    # raa_image[raa_image==180] = 179.0
+    raa_max = atm_lut_RAA.max()
+    raa_image[raa_image > raa_max] = raa_max-1e-1
     # Clear data
     sca_image.flush()
     del sca_header, saa, sca_image
