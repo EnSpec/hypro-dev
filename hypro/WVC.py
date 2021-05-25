@@ -15,7 +15,8 @@ import logging
 import numpy as np
 
 logger = logging.getLogger(__name__)
-solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data','solar_flux.dat')
+
+solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'data/solar-data/solar_flux.dat')
 
 
 def build_wvc_model(wvc_model_file, atm_lut_file, rdn_header_file, vis=40):

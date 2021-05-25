@@ -16,7 +16,7 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'data','solar_flux.dat')
+solar_flux_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), os.pardir, 'data/solar-data/solar_flux.dat')
 
 
 def pre_classification(pre_class_image_file, rdn_image_file, sun_zenith, distance, background_mask_file=None):
