@@ -234,7 +234,129 @@ def calculate_sca(sca_image_file, imugps_file, igm_image_file, sun_angles):
     logger.info('Write the SCA to %s.' %sca_image_file)
 
 
-def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
+def get_gdal_dtype(dtype):
+    from osgeo import gdal_array
+    return gdal_array.NumericTypeCodeToGDALTypeCode(dtype)
+
+def resolve_dataset(dataset, *, name=None, default_driver='MEM', options=None, return_data=True):
+    
+    if type(dataset) is str:
+        # Load dataset from file
+        dataset = gdal.Open(dataset)
+        if return_data is True:
+            data = dataset.ReadAsArray()
+        
+    elif type(dataset) is np.ndarray:
+        data = dataset
+        dtype = get_gdal_dtype(data.dtype)
+        if default_driver == 'MEM':
+            assert name is not None
+            name = f'/vsimem/{name}'
+        # Load GDAL in-memory raster driver
+        driver = gdal.GetDriverByName(default_driver)
+        # Write dataset to in-memory dataset (name required!)
+        dataset = driver.Create(name, *dataset.shape, dtype)#, options=options)
+    
+    elif type(dataset) is gdal.Dataset:
+        if return_data is True:
+            data = dataset.ReadAsArray()
+    
+    else:
+        raise TypeError('Argument `dataset` of improper type '
+                        f'"{type(dataset)}". Must be one of: '
+                        '`str`, `np.ndarray`, or `gdal.Dataset`.')
+    
+    if return_data is True:
+        return dataset, data
+    else:
+        return dataset
+
+def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=None, output_dtype=None, **kwargs):
+    """ Project a raw dataset using geolocation array (IGM). """
+    
+    default_kwargs = {
+        'resampleAlg': 'near',
+        'targetAlignedPixels': True,
+        'multithread': True
+    }
+    
+    default_kwargs.update(kwargs)
+    kwargs = default_kwargs
+    
+    igm_ds, igm = resolve_dataset(geoloc, default_driver='MEM', name='GEOLOC_POINTS')
+    igm_file = igm_ds.GetDescription()
+    ### TODO: Check `axis`
+    
+    # `igm` has shape (3, scanlines, columns)
+    
+    # Calculate transform bounds from IGM
+    igm_min = igm[:2].min(axis=(1,2))
+    igm_min -= 1 + (igm_min % pixel_size) ## TODO: Broadcasting?
+    x_min, y_min = igm_min
+    
+    igm_max = igm[:2].max(axis=(1,2))
+    igm_max += 2 - (igm_max % pixel_size)
+    x_max, y_max = igm_max
+    
+    bounds = (x_min, y_min, x_max, y_max)
+    
+    ### TODO: Add identifying info to file name
+    
+    raw_ds = resolve_dataset(dataset, default_driver='MEM', name='GEOLOC_RAWDATA', return_data=False)
+    
+    geoloc_metadata = {
+        'SRS': crs.ExportToWkt(),
+        'X_BAND': '1',
+        'X_DATASET': igm_file,
+        'Y_BAND': '2',
+        'Y_DATASET': igm_file,
+        'PIXEL_OFFSET': '0',
+        'LINE_OFFSET': '0',
+        'PIXEL_STEP': '1',
+        'LINE_STEP': '1',
+    }
+    
+    # Set geolocation domain metadata on the raw dataset
+    raw_ds.SetMetadata(geoloc_metadata, 'GEOLOCATION')
+    
+    try:
+        # (Potentially) nonsquare pixels; `pixel_size` is array-like
+        x_res, y_res = pixel_size 
+        y_res *= -1
+    except TypeError:
+        # Square pixels; `pixel_size` is float
+        x_res = y_res = pixel_size
+    
+    if nodata is None:
+        ### TODO: Check for signed data type
+        nodata = -9999
+    
+    if output_dtype is None:
+        output_dtype = raw_ds.DataType
+    else:
+        output_dtype = get_gdal_dtype(output_dtype)
+    
+    warp_options = gdal.WarpOptions(
+        geoloc = True,
+        outputBounds = bounds,
+        xRes = x_res,
+        yRes = y_res,
+        dstSRS = crs,
+        srcNodata = None,
+        dstNodata = nodata,
+        outputType = output_dtype,
+        **kwargs
+    )
+    
+    warped_ds = gdal.Warp('/vsimem/GEOLOC_WARPED.tif', raw_ds, options=warp_options)
+    
+    warped_data = warped_ds.ReadAsArray()
+    warped_gt = warped_ds.GetGeoTransform()
+    
+    return warped_data, warped_gt
+
+
+def build_glt(glt_file, igm_image_file, pixel_size, map_crs):
     """ Create a geographic lookup table (GLT) image.
 
     Notes
@@ -254,7 +376,7 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
 
     Parameters
     ----------
-    glt_image_file: str
+    glt_file: str
         Geographic look-up table filename.
     igm_image_file: str
         Input geometry filename.
@@ -264,169 +386,68 @@ def build_glt(glt_image_file, igm_image_file, pixel_size, map_crs):
         GLT image map coordinate system.
     """
 
-    if os.path.exists(glt_image_file):
-        logger.info('Write the GLT to %s.' %glt_image_file)
+    if os.path.exists(glt_file):
+        logger.info('Write the GLT to %s.' %glt_file)
         return
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
-
-    # Read IGM
-    igm_header = read_envi_header(os.path.splitext(igm_image_file)[0]+'.hdr')
-    igm_image = np.memmap(igm_image_file,
-                          dtype='float64',
-                          mode='r',
-                          offset=0,
-                          shape=(igm_header['bands'], igm_header['lines'], igm_header['samples']))
-
-    # Estimate output spatial extent
-    X_Min = igm_image[0,:,:].min()
-    X_Max = igm_image[0,:,:].max()
-    Y_Min = igm_image[1,:,:].min()
-    Y_Max = igm_image[1,:,:].max()
-    X_Min = np.floor(X_Min/pixel_size)*pixel_size-pixel_size
-    X_Max = np.ceil(X_Max/pixel_size)*pixel_size+pixel_size
-    Y_Min = np.floor(Y_Min/pixel_size)*pixel_size-pixel_size
-    Y_Max = np.ceil(Y_Max/pixel_size)*pixel_size+pixel_size
-    igm_image.flush()
-    del igm_image
-
-    # Build VRT for IGM
-    igm_vrt_file = os.path.splitext(igm_image_file)[0]+'.vrt'
-    igm_vrt = open(igm_vrt_file,'w')
-    igm_vrt.write('<VRTDataset rasterxsize="%s" rasterysize="%s">\n' %(igm_header['samples'], igm_header['lines']))
-    for band in range(igm_header['bands']):
-        igm_vrt.write('\t<VRTRasterBand dataType="%s" band="%s">\n' % ("Float64", band+1))
-        igm_vrt.write('\t\t<SimpleSource>\n')
-        igm_vrt.write('\t\t\t<SourceFilename relativeToVRT="1">%s</SourceFilename>\n' %igm_image_file.replace('&', '&amp;'))
-        igm_vrt.write('\t\t\t<SourceBand>%s</SourceBand>\n' %(band+1))
-        igm_vrt.write('\t\t\t<SourceProperties RasterXSize="%s" RasterYSize="%s" DataType="%s" BlockXSize="%s" BlockYSize="%s" />\n' %(igm_header['samples'],
-                                                                                                                                       igm_header['lines'],
-                                                                                                                                       "Float64",
-                                                                                                                                       igm_header['samples'], 1))
-        igm_vrt.write('\t\t\t<SrcRect xOff="0" yOff="0" xSize="%s" ySize="%s" />\n' %(igm_header['samples'], igm_header['lines']))
-        igm_vrt.write('\t\t\t<DstRect xOff="0" yOff="0" xSize="%s" ySize="%s" />\n' %(igm_header['samples'], igm_header['lines']))
-        igm_vrt.write("\t\t</SimpleSource>\n")
-        igm_vrt.write("\t</VRTRasterBand>\n")
-    igm_vrt.write("</VRTDataset>\n")
-    igm_vrt.close()
-
-    # Make IGM index image
-    index_image_file = igm_image_file+'_Index'
-    index_image = np.memmap(index_image_file,
-                            dtype='int32',
-                            mode='w+',
-                            offset=0,
-                            shape=(2,
-                                   igm_header['lines'],
-                                   igm_header['samples']))
-    index_image[0,:,:], index_image[1,:,:] = np.mgrid[0:igm_header['lines'], 0:igm_header['samples']]
-    index_image.flush()
-    del index_image
-
-    index_header = empty_envi_header()
-    index_header['description'] = 'IGM Image Index'
-    index_header['samples'] = igm_header['samples']
-    index_header['lines'] = igm_header['lines']
-    index_header['bands'] = 2
-    index_header['byte order'] = 0
-    index_header['header offset'] = 0
-    index_header['interleave'] = 'bsq'
-    index_header['data type'] = 3
-    index_header['band names'] = ['Image Row', 'Image Column']
-    index_header_file = os.path.splitext(index_image_file)[0]+'.hdr'
-    write_envi_header(index_header_file, index_header)
-
-    # Build VRT for IGM index
-    index_vrt_file = os.path.splitext(index_image_file)[0]+'.vrt'
-    index_vrt = open(index_vrt_file,'w')
-    index_vrt.write('<VRTDataset rasterxsize="%s" rasterysize="%s">\n' %(index_header['samples'], index_header['lines']))
-    index_vrt.write('\t<Metadata Domain = "GEOLOCATION">\n')
-    index_vrt.write('\t\t<mdi key="X_DATASET">%s</mdi>\n' %igm_image_file.replace('&', '&amp;'))
-    index_vrt.write('\t\t<mdi key="X_BAND">1</mdi>\n')
-    index_vrt.write('\t\t<mdi key="Y_DATASET">%s</mdi>\n' %igm_image_file.replace('&', '&amp;'))
-    index_vrt.write('\t\t<mdi key="Y_BAND">2</mdi>\n')
-    index_vrt.write('\t\t<mdi key="PIXEL_OFFSET">0</mdi>\n')
-    index_vrt.write('\t\t<mdi key="LINE_OFFSET">0</mdi>\n')
-    index_vrt.write('\t\t<mdi key="PIXEL_STEP">1</mdi>\n')
-    index_vrt.write('\t\t<mdi key="LINE_STEP">1</mdi>\n')
-    index_vrt.write('\t</Metadata>\n')
-    for band in range(index_header['bands']):
-        index_vrt.write('\t<VRTRasterBand dataType="%s" band="%s">\n' % ("Int16", band+1))
-        index_vrt.write('\t\t<SimpleSource>\n')
-        index_vrt.write('\t\t\t<SourceFilename relativeToVRT="1">%s</SourceFilename>\n' %index_image_file.replace('&', '&amp;'))
-        index_vrt.write('\t\t\t<SourceBand>%s</SourceBand>\n' %(band+1))
-        index_vrt.write('\t\t\t<SourceProperties RasterXSize="%s" RasterYSize="%s" DataType="%s" BlockXSize="%s" BlockYSize="%s" />\n' %(index_header['samples'],
-                                                                                                                                       index_header['lines'],
-                                                                                                                                       "Int32",
-                                                                                                                                       index_header['samples'], 1))
-        index_vrt.write('\t\t\t<SrcRect xOff="0" yOff="0" xSize="%s" ySize="%s" />\n' %(index_header['samples'], index_header['lines']))
-        index_vrt.write('\t\t\t<DstRect xOff="0" yOff="0" xSize="%s" ySize="%s" />\n' %(index_header['samples'], index_header['lines']))
-        index_vrt.write("\t\t</SimpleSource>\n")
-        index_vrt.write("\t</VRTRasterBand>\n")
-    index_vrt.write("</VRTDataset>\n")
-    index_vrt.close()
-
-    # Build GLT
-    tmp_glt_image_file = glt_image_file+'.tif'
-    tmp_glt_image = gdal.Warp(tmp_glt_image_file, index_vrt_file,
-                              outputBounds=(X_Min, Y_Min, X_Max, Y_Max),
-                              xRes=pixel_size, yRes=pixel_size,
-                              resampleAlg='near',
-                              dstSRS=map_crs.ExportToProj4(),
-                              dstNodata=-1,
-                              multithread=True,
-                              geoloc=True)
-    del tmp_glt_image
-
-    # Convert .TIF file to ENVI format
-    ds = gdal.Open(tmp_glt_image_file, gdal.GA_ReadOnly)
-    lines = ds.RasterYSize
-    samples = ds.RasterXSize
-    glt_image = np.memmap(glt_image_file,
-                          dtype='int32',
-                          mode='w+',
-                          offset=0,
-                          shape=(2, lines, samples))
-    for band in range(ds.RasterCount):
-        glt_image[band,:,:] = ds.GetRasterBand(band+1).ReadAsArray()
-    glt_image.flush()
-    del glt_image
-    ds = None
-
+    
+    # Load input geometry map as GDAL dataset
+    igm_ds = gdal.Open(igm_image_file)
+    igm = igm_ds.ReadAsArray()
+    
+    # extent = (*igm_min, *igm_max)
+    lines = igm_ds.RasterYSize
+    samples = igm_ds.RasterXSize
+    
+    #
+    mem_driver = gdal.GetDriverByName('MEM')
+    idx_ds = mem_driver.Create('/vsimem/IGM_INDEX', samples, lines, 2, gdal.GDT_Int32)
+    
+    # Construct indices on raw IGM
+    idx = np.mgrid[0:lines, 0:samples]
+    for i in range(idx.shape[0]):
+        idx_ds.GetRasterBand(i+1).WriteArray(idx[i])
+    
+    # Construct GLT by warping IGM indices to geolocation array
+    glt_data, glt_gt = warp_by_geolocation(idx_ds, igm_ds, map_crs, pixel_size, nodata=-9999, output_dtype=np.int32)
+    
+    # Write to ENVI format
+    glt = np.memmap(glt_file, mode='w+', dtype='int32',
+                    offset=0, shape=glt_data.shape)
+    glt[:] = glt_data
+    
+    x_min, y_max = glt_gt[0], glt_gt[3]
+    ps_x, ps_y = glt_gt[1], glt_gt[5]
+    
     # Write GLT header
     glt_header = empty_envi_header()
     glt_header['description'] = 'GLT'
     glt_header['file type'] = 'ENVI Standard'
-    glt_header['samples'] = samples
-    glt_header['lines'] = lines
+    glt_header['samples'] = glt_data.shape[2]
+    glt_header['lines'] = glt_data.shape[1]
     glt_header['bands'] = 2
     glt_header['byte order'] = 0
     glt_header['header offset'] = 0
     glt_header['interleave'] = 'bsq'
     glt_header['data type'] = 3
-    glt_header['data ignore value'] = -1
+    glt_header['data ignore value'] = -9999 ### TODO!
     glt_header['band names'] = ['Image Row', 'Image Column']
     glt_header['coordinate system string'] = map_crs.ExportToWkt()
     glt_header['map info'] = [map_crs.GetAttrValue('projcs').replace(',',''),
-              1, 1, X_Min, Y_Max, pixel_size, pixel_size, ' ', ' ',
+              1, 1, x_min, y_max, ps_x, -ps_y, ' ', ' ',
               map_crs.GetAttrValue('datum'), map_crs.GetAttrValue('unit')]
     if map_crs.GetAttrValue('PROJECTION').lower() == 'transverse_mercator':
         glt_header['map info'][7] = map_crs.GetUTMZone()
-        if Y_Max>0.0:
+        if y_max>0.0:
             glt_header['map info'][8] = 'North'
         else:
             glt_header['map info'][8] = 'South'
-    glt_header_file = os.path.splitext(glt_image_file)[0]+'.hdr'
+    glt_header_file = os.path.splitext(glt_file)[0]+'.hdr'
+    
     write_envi_header(glt_header_file, glt_header)
 
-    # Remove temporary files
-    os.remove(index_image_file)
-    os.remove(index_vrt_file)
-    os.remove(index_header_file)
-    os.remove(igm_vrt_file)
-    os.remove(tmp_glt_image_file)
-
-    logger.info('Write the GLT to %s.' %glt_image_file)
+    logger.info('Write the GLT to %s.' %glt_file)
 
 
 def get_scan_vectors(imu, sensor_model):

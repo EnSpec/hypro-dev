@@ -250,7 +250,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
     """
 
     if os.path.exists(merged_image_file):
-        logger.info('Write the merged refletance image to %s.' %merged_image_file)
+        logger.info('Write the merged radiance image to %s.' %merged_image_file)
         return
 
     from ENVI import empty_envi_header, read_envi_header, write_envi_header
@@ -342,7 +342,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
     write_envi_header(os.path.splitext(merged_image_file)[0]+'.hdr', header)
     del header, tmp_header
 
-    logger.info('Write the merged refletance image to %s.' %merged_image_file)
+    logger.info('Write the merged radiance image to %s.' %merged_image_file)
 
 
 def resample_ortho_sca(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
@@ -444,7 +444,7 @@ def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     Returns
     -------
     resampled_image: 2D array
-        Resampled refletance image.
+        Resampled reflectance image.
     """
 
     from scipy import ndimage

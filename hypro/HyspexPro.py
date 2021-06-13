@@ -134,7 +134,7 @@
 
 import argparse, glob, json, logging, os, re
 
-from Geography        import get_map_crs, get_sun_angles
+from Geography        import get_map_crs
 from IMUGPS           import prepare_imugps_Hyspex
 from SensorModel      import determine_if_rotated, make_sensor_model
 from DEM              import prepare_dem
