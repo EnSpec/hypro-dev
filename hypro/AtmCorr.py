@@ -63,7 +63,7 @@ def atm_corr_band(atm_lut_WVC, atm_lut_VIS, atm_lut_VZA, atm_lut_RAA, atm_lut,
     S = (rdn_100-2*rdn_050)/(rdn_100-rdn_050+1e-10)
     F = rdn_100*(1-S)
     A = rdn_image[idx]-rdn_000
-    rho = np.zeros(rdn_image.shape)
+    rho = np.full(rdn_image.shape, -9999.0, dtype=np.float32)
     rho[idx] = A/(F+S*A)
 
     # Clear data

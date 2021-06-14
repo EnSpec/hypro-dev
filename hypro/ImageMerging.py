@@ -154,7 +154,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
                                          float(raw_header['map info'][4]),
                                          float(raw_header['map info'][5]),
                                          x, y)
-    resampled_image[mask] = -1000.0
+    resampled_image[mask] = -9999.0
 
     # Write merged DEM to file
     fid = open(merged_dem_file, 'wb')
@@ -173,9 +173,9 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     header['bands'] = 1
     header['byte order'] = 0
     header['header offset'] = 0
+    header['data ignore value'] = -9999.0
     header['interleave'] = 'bsq'
     header['data type'] = 4
-    header['data ignore value'] = -1000.0
     header['map info'] = map_info
     header['coordinate system string'] = crs
     write_envi_header(os.path.splitext(merged_dem_file)[0]+'.hdr', header)
@@ -206,7 +206,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
                                              float(raw_header['map info'][4]),
                                              float(raw_header['map info'][5]),
                                              x, y)
-        resampled_image[mask] = -1000.0
+        resampled_image[mask] = -9999.0
         fid.write(resampled_image.astype('float32').tostring())
         del resampled_image
     fid.close()
@@ -228,7 +228,7 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     header['band names'] = ['Sensor Zenith [deg]', 'Sensor Azimuth [deg]']
     header['sun azimuth'] = raw_header['sun azimuth']
     header['sun zenith'] = raw_header['sun zenith']
-    header['data ignore value'] = -1000.0
+    header['data ignore value'] = -9999.0
     header['map info'] = map_info
     header['coordinate system string'] = crs
     write_envi_header(os.path.splitext(merged_sca_file)[0]+'.hdr', header)
@@ -311,7 +311,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
                                                  float(header_dict[sensor_index]['map info'][4]),
                                                  float(header_dict[sensor_index]['map info'][5]),
                                                  x, y)
-            resampled_image[mask_image] = 0.0
+            resampled_image[mask_image] = -9999.0
             rdn_image.flush()
             del rdn_image
 
@@ -333,6 +333,7 @@ def merge_rdn(merged_image_file, mask_file, sensors):
     header['header offset'] = 0
     header['interleave'] = 'bsq'
     header['data type'] = 4
+    header['data ignore value'] = -9999.0
     header['wavelength'] = wavelengths
     header['fwhm'] = fwhms
     header['wavelength units'] = 'nm'
@@ -374,7 +375,7 @@ def resample_ortho_sca(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     avg_image = ndimage.convolve(raw_image, weights)
     count = ndimage.convolve(count.astype('int8'), weights)
     avg_image[count>0] /= count[count>0]
-    avg_image[count==0] = -1000.0
+    avg_image[count==0] = -9999.0
     del count
 
     # Resample
@@ -415,7 +416,7 @@ def resample_ortho_dem(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     avg_image = ndimage.convolve(raw_image, weights)
     count = ndimage.convolve(count.astype('int8'), weights)
     avg_image[count>0] /= count[count>0]
-    avg_image[count==0] = -1000.0
+    avg_image[count==0] = -9999.0
     del count
 
     # Resample
@@ -456,6 +457,7 @@ def resample_ortho_rdn(raw_image, raw_ulx, raw_uly, raw_pixel_size, x, y):
     avg_image = ndimage.convolve(raw_image, weights)
     count = ndimage.convolve(count.astype('int8'), weights)
     avg_image[count>0] /= count[count>0]
+    avg_image[count==0] = -9999.0
     del count
 
     # Resample

@@ -55,7 +55,7 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
     # Orthorectify SCA
     fid = open(ortho_sca_image_file, 'wb')
     for band in range(sca_header['bands']):
-        ortho_sca_image[:,:] = -1000.0
+        ortho_sca_image[:,:] = -9999.0
         offset = sca_header['header offset']++4*band*sca_header['lines']*sca_header['samples']
         sca_image = np.memmap(sca_image_file,
                               dtype='float32',
@@ -80,7 +80,7 @@ def orthorectify_sca(ortho_sca_image_file, sca_image_file, glt_image_file):
     ortho_sca_header['bands'] = sca_header['bands']
     ortho_sca_header['byte order'] = 0
     ortho_sca_header['header offset'] = 0
-    ortho_sca_header['data ignore value'] = -1000.0
+    ortho_sca_header['data ignore value'] = -9999.0
     ortho_sca_header['interleave'] = 'bsq'
     ortho_sca_header['data type'] = 4
     ortho_sca_header['band names'] = sca_header['band names']
@@ -138,7 +138,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
 
     # Orthorectify DEM
     fid = open(ortho_dem_image_file, 'wb')
-    ortho_dem_image[:,:] = -1000.0
+    ortho_dem_image[:,:] = -9999.0
     ortho_dem_image[I,J] = igm_image[2, glt_image[0,I,J], glt_image[1,I,J]]
     fid.write(ortho_dem_image.tostring())
     fid.close()
@@ -156,7 +156,7 @@ def orthorectify_dem(ortho_dem_image_file, igm_image_file, glt_image_file):
     ortho_dem_header['bands'] = 1
     ortho_dem_header['byte order'] = 0
     ortho_dem_header['header offset'] = 0
-    ortho_dem_header['data ignore value'] = -1000.0
+    ortho_dem_header['data ignore value'] = -9999.0
     ortho_dem_header['interleave'] = 'bsq'
     ortho_dem_header['data type'] = 4
     ortho_dem_header['map info'] = glt_header['map info']
@@ -215,7 +215,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
     for band in range(rdn_header['bands']):
         if band%20==0:
             info += '%d, ' %(band+1)
-        ortho_image[:,:] = 0.0
+        ortho_image[:,:] = -9999.0
         ortho_image[I,J] = rdn_image[glt_image[0,I,J], band, glt_image[1,I,J]]
         fid.write(ortho_image.tostring())
     fid.close()
@@ -235,6 +235,7 @@ def orthorectify_rdn(ortho_rdn_image_file, rdn_image_file, glt_image_file):
     ortho_rdn_header['bands'] = rdn_header['bands']
     ortho_rdn_header['byte order'] = 0
     ortho_rdn_header['header offset'] = 0
+    ortho_rdn_header['data ignore value'] = -9999.0
     ortho_rdn_header['interleave'] = 'bsq'
     ortho_rdn_header['data type'] = 4
     ortho_rdn_header['wavelength'] = rdn_header['wavelength']

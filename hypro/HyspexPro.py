@@ -235,7 +235,7 @@ def initialize_flight_dict(config, flight_index):
     # Flight atmospheric lookup table directory
     flight_dict['atm_dir'] = os.path.join(flight_dict['output_dir'], 'atm')
     if not os.path.exists(flight_dict['atm_dir']):
-        os.mkdir(flight_dict['atm_dir'])
+        os.makedirs(flight_dict['atm_dir'], exist_ok=True)
 
     # Flight merged image directory
     flight_dict['merge_dir'] = os.path.join(flight_dict['output_dir'], 'merge')
