@@ -1,7 +1,9 @@
+# MacOS
 .DS_Store
 
-# Ignore pycached files
-hypro/__pycache__/
+# Ignore byte-compiled files
+__pycache__/
+*.py[cod]
 
 # Ignore generated documentation
 docs/_build
@@ -15,3 +17,9 @@ docs/*.rst
 !docs/Makefile
 !docs/make.bat
 !docs/README.md
+
+# Jupyter notebook
+.ipynb_checkpoints
+
+# Spyder project settings
+.spyproject
