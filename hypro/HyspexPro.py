@@ -405,7 +405,7 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 0 ----------------------------- #
        
-        flight_log.info('%sFlight: %s%s' %('='*20, flight_index, '='*20))
+        flight_log.info(f'{"="*20} Flight: {flight_index} {"="*20}')
 
         # Initialize the flight dictionary
         flight_dict = initialize_flight_dict(config, flight_index)
@@ -413,7 +413,7 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 1 ----------------------------- #
 
-        flight_log.info('%sPART 1: Extract flight information.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 1: Extract flight information.')
 
         # Center longitude & latitude
         sensor_dict = flight_dict['sensors'][list(flight_dict['sensors'].keys())[0]]
@@ -439,7 +439,7 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 2 ----------------------------- #
         
-        flight_log.info('%sPart 2: Do geo-referencings.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 2: Do georeferencing.')
         
         for sensor_index, sensor_dict in flight_dict['sensors'].items():
             flight_log.info('Sensor: %s' %sensor_index)
@@ -535,14 +535,15 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 3 ----------------------------- #
 
-        flight_log.info('%sPart 3: Build an ALT (Atmospheric Lookup Table).' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 3: Build an atmospheric lookup table (ALT).')
+        
         flight_dict['raw_atm_lut_file'] = os.path.join(flight_dict['atm_dir'], '%s_RawALT' %flight_index)
         build_atm_lut(flight_dict)
 
 
         # ----------------------------- Part 4 ----------------------------- #
 
-        flight_log.info('%sPart 4: Do radiometric calibrations.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 4: Do radiometric calibration.')
 
         for sensor_index, sensor_dict in flight_dict['sensors'].items():
             flight_log.info('Sensor: %s' %sensor_index)
@@ -582,7 +583,8 @@ def HyspexPro(config_file):
 
         # ----------------------------- Part 5 ----------------------------- #
 
-        flight_log.info('%sPart 5: Detect smile effects.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 5: Detect smile effects.')
+        
         for sensor_index, sensor_dict in flight_dict['sensors'].items():
             flight_log.info('Sensor: %s' %sensor_index)
 
@@ -650,7 +652,7 @@ def HyspexPro(config_file):
 
         # ----------------------------- Part 6 ----------------------------- #
 
-        flight_log.info('%sPart 6: Do geo-rectifications.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 6: Do georectification.')
 
         for sensor_index, sensor_dict in flight_dict['sensors'].items():
             flight_log.info('Sensor: %s' %sensor_index)
@@ -682,7 +684,7 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 7 ----------------------------- #
         
-        flight_log.info('%sPart 7: Merge images from different sensors.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 7: Merge images from different sensors.')
 
         # Merge DEM & SCA
         flight_log.info('Merge orthorectified DEM and SCA images.')
@@ -704,7 +706,7 @@ def HyspexPro(config_file):
         
         # ----------------------------- Part 8 ----------------------------- #
         
-        flight_log.info('%sPart 8: Do atmospheric corrections.' %('-'*10))
+        flight_log.info(f'{"-"*10} PART 8: Do atmospheric corrections.')
 
         # Resample atmospheric lookup table (ALT) to sensor wavelengths
         flight_log.info('Resample the raw ALT to sensor wavelengths.')
