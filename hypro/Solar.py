@@ -1,3 +1,18 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2021
+# Brendan Heberlein <bheberlein@wisc.edu>
+# Nanfeng Liu <nliu58@wisc.edu>
+#
+# Environmental Spectroscopy Laboratory
+# Dept. of Forest and Wildlife Ecology
+# University of Wisconsin - Madison
+#
+# HyPro is free software, made available
+# for use & modification according to the
+# GNU General Public License 3.0 (GPL v3).
+# See `../LICENSE` for complete terms.
+
 import os
 
 import numpy as np

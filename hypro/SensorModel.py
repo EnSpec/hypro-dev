@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 #
-# Copyright (C) 2021 by Nanfeng Liu <nliu58@wisc.edu>
-# Licensed GNU GPL v3; see `../LICENSE` for complete terms.
+# Copyright (C) 2021
+# Brendan Heberlein <bheberlein@wisc.edu>
+# Nanfeng Liu <nliu58@wisc.edu>
 #
 # Environmental Spectroscopy Laboratory
 # Dept. of Forest and Wildlife Ecology
 # University of Wisconsin - Madison
+#
+# HyPro is free software, made available
+# for use & modification according to the
+# GNU General Public License 3.0 (GPL v3).
+# See `../LICENSE` for complete terms.
 
 """ Functions to create a sensor model. """
 
