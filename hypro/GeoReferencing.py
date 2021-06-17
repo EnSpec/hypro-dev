@@ -20,8 +20,11 @@ import logging
 import warnings
 
 import numpy as np
-from osgeo import gdal
+from osgeo import gdal, ogr
 from numba import guvectorize, jit
+
+from spatial.geometry import geometry_to_layer
+from spatial.footprint import footprint
 
 logger = logging.getLogger(__name__)
 
@@ -291,20 +294,28 @@ def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=No
     
     igm_ds, igm = resolve_dataset(geoloc, default_driver='MEM', name='GEOLOC_POINTS')
     igm_file = igm_ds.GetDescription()
+    
     ### TODO: Check `axis`
     
     # `igm` has shape (3, scanlines, columns)
     
-    # Calculate transform bounds from IGM
-    igm_min = igm[:2].min(axis=(1,2))
-    igm_min -= 1 + (igm_min % pixel_size) ## TODO: Broadcasting?
-    x_min, y_min = igm_min
+    try:
+        # (Potentially) nonsquare pixels; `pixel_size` is array-like
+        x_res, y_res = pixel_size 
+        y_res *= -1
+    except TypeError:
+        # Square pixels; `pixel_size` is float
+        x_res = y_res = pixel_size
     
-    igm_max = igm[:2].max(axis=(1,2))
-    igm_max += 2 - (igm_max % pixel_size)
-    x_max, y_max = igm_max
+    # Calculate image footprint from IGM
+    fp = footprint(igm, np.mean([x_res, y_res]))
+    # Create in-memory shapefile datasource to store footprint geometry
+    shp_driver = ogr.GetDriverByName('ESRI Shapefile')
+    # fp_datasource = shp_driver.CreateDataSource('/vsimem/IGM_FOOTPRINT.shp')
+    fp_datasource = shp_driver.CreateDataSource('C:/Users/bheberlein.RUSSELL/Desktop/IGM_FOOTPRINT.shp')
+    _ = geometry_to_layer([fp], crs, fp_datasource, 'IGM_FOOTPRINT')
     
-    bounds = (x_min, y_min, x_max, y_max)
+    footprint_ds_name = '/vsimem/IGM_FOOTPRINT.shp'
     
     ### TODO: Add identifying info to file name
     
@@ -325,14 +336,6 @@ def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=No
     # Set geolocation domain metadata on the raw dataset
     raw_ds.SetMetadata(geoloc_metadata, 'GEOLOCATION')
     
-    try:
-        # (Potentially) nonsquare pixels; `pixel_size` is array-like
-        x_res, y_res = pixel_size 
-        y_res *= -1
-    except TypeError:
-        # Square pixels; `pixel_size` is float
-        x_res = y_res = pixel_size
-    
     if nodata is None:
         ### TODO: Check for signed data type
         nodata = -9999
@@ -344,7 +347,10 @@ def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=No
     
     warp_options = gdal.WarpOptions(
         geoloc = True,
-        outputBounds = bounds,
+        outputBounds = fp.bounds,
+        # cropToCutline = True,
+        # cutlineDSName = footprint_ds_name,
+        # cutlineLayer = 'IGM_FOOTPRINT',
         xRes = x_res,
         yRes = y_res,
         dstSRS = crs,
@@ -354,10 +360,27 @@ def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=No
         **kwargs
     )
     
-    warped_ds = gdal.Warp('/vsimem/GEOLOC_WARPED.tif', raw_ds, options=warp_options)
+    warped_ds_name = '/vsimem/GEOLOC_WARPED.tif'
+    warped_ds = gdal.Warp(warped_ds_name, raw_ds, options=warp_options)
     
-    warped_data = warped_ds.ReadAsArray()
-    warped_gt = warped_ds.GetGeoTransform()
+    crop_options = gdal.WarpOptions(
+        cropToCutline = True,
+        cutlineDSName = footprint_ds_name,
+        cutlineLayer = 'IGM_FOOTPRINT',
+        warpOptions = ['CUTLINE_ALL_TOUCHED=TRUE']
+    )
+    
+    cropped_ds_name = '/vsimem/GEOLOC_WARPED_CROPPED'
+    cropped_ds = gdal.Warp(cropped_ds_name, warped_ds, options=crop_options) 
+    
+    warped_data = cropped_ds.ReadAsArray()
+    warped_gt = cropped_ds.GetGeoTransform()
+    # warped_data = warped_ds.ReadAsArray()
+    # warped_gt = warped_ds.GetGeoTransform()
+    
+    gdal.Unlink(warped_ds_name)
+    gdal.Unlink(cropped_ds_name)
+    gdal.Unlink(footprint_ds_name)
     
     return warped_data, warped_gt
 
