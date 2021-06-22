@@ -17,13 +17,14 @@
 
 import os
 import logging
+import operator
 
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
 
-def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensors):
+def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensors, sampling='lowest'):
     """ Merge DEM and SCA images.
 
     Parameters
@@ -49,7 +50,15 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
     """
         Get spatial extent and pixel size.
     """
-    ulx, uly, lrx, lry, pixel_size = -np.inf, np.inf, np.inf, -np.inf, np.inf
+    ulx, uly, lrx, lry = -np.inf, np.inf, np.inf, -np.inf
+    
+    if sampling == 'highest':
+        pixel_size = np.inf
+        compare_pixel_size = operator.lt
+    elif sampling == 'lowest':
+        pixel_size = 0.0
+        compare_pixel_size = operator.gt
+    
     for sensor_index, sensor_dict in sensors.items():
         tmp_header = read_envi_header(os.path.splitext(sensor_dict['ortho_dem_image_file'])[0]+'.hdr')
         tmp_ulx, tmp_uly = float(tmp_header['map info'][3]), float(tmp_header['map info'][4])
@@ -63,15 +72,22 @@ def merge_dem_sca(background_mask_file, merged_dem_file, merged_sca_file, sensor
             lrx = tmp_lrx
         if tmp_lry > lry:
             lry = tmp_lry
-        if tmp_pixel_size < pixel_size:
-            pixel_size = tmp_pixel_size
+        if compare_pixel_size(tmp_pixel_size, pixel_size):
+                pixel_size = tmp_pixel_size
         del tmp_ulx, tmp_uly, tmp_pixel_size, tmp_lrx, tmp_lry
-    pixel_size = 2*pixel_size
+    
+    # Bin pixels to account for initial processing at 2x resolution
+    pixel_size *= 2.0
+    
+    # Find lower right corners of first CRS-aligned pixels at the
+    #  upper left & lower right corners which are fully in the image
     ulx, uly = np.ceil(ulx/pixel_size+1)*pixel_size, np.floor(uly/pixel_size-1)*pixel_size
     lrx, lry = np.ceil(lrx/pixel_size-1)*pixel_size, np.floor(lry/pixel_size+1)*pixel_size
     map_info = [tmp_header['map info'][0], 1, 1, ulx, uly, pixel_size, pixel_size]+tmp_header['map info'][7:]
     crs = tmp_header['coordinate system string']
+    
     del tmp_header
+    
     logger.info('The spatial range and pixel size of merged images:')
     logger.info('Map x = %.2f - %.2f' %(ulx, lrx))
     logger.info('Map y = %.2f - %.2f' %(lry, uly))

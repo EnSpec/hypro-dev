@@ -519,7 +519,7 @@ def HyspexPro(config_file):
             sensor_dict['glt_image_file'] = os.path.join(sensor_dict['output_dir'], basename+'_GLT')
             build_glt(sensor_dict['glt_image_file'],
                       sensor_dict['igm_image_file'],
-                      sensor_dict['pixel_size']/2.0,
+                      sensor_dict['pixel_size']/2.0, # Initially, process at twice the true resolution
                       flight_dict['map_crs'])
 
             # Plot image areas
