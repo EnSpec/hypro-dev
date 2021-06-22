@@ -159,6 +159,7 @@ from AtmCorr          import atm_corr_image
 from Solar            import get_sun_angles, get_sun_earth_distance
 from Interpolate      import interpolate_detectors
 from Coregistration   import do_coregistration
+from Ancillary        import calculate_ancillary_products
 
 
 def get_flight_indices(config):
@@ -753,6 +754,19 @@ def HyspexPro(config_file):
         flight_dict['refl_file'] = os.path.join(flight_dict['merge_dir'], '%s_Refl' %flight_index)
         atm_corr_image(flight_dict)
 
+        
+        # ---------------------------- Part 10 ----------------------------- #
+        
+        flight_log.info(f'{"-"*10} PART 10: Generate ancillary datasets.')
+
+        # Calculate ancillary datasets for the flightline
+        # DEM slope & aspect, phase & cosine I
+        # Solar & viewing angle images (SZA, SAA, VZA, RAA)
+        calculate_ancillary_products(flight_dict)
+    
+    
+    flight_log.info('Processing complete!')
+    
     logging.shutdown()
 
 

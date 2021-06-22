@@ -22,6 +22,7 @@
         https://github.com/EnSpec/HyTools-sandbox/blob/master/hytools/file_io/envi_write.py
 """
 
+from pathlib import Path
 from copy import deepcopy
 
 envi_value_types = {'acquisition time': 'str',
@@ -266,3 +267,14 @@ def write_envi_header(file, header):
         fid.write('%s = %s\n' %(field, value))
 
     fid.close()
+
+
+def write_to_envi(out_fn, arr, hdr):
+    
+    out_fn = Path(out_fn)
+    
+    # Write data to binary file
+    with out_fn.open(mode='wb+') as f:
+        f.write(arr.tobytes())
+        
+    write_envi_header(str(out_fn.with_suffix('.hdr')), hdr)
