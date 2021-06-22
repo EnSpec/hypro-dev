@@ -311,8 +311,7 @@ def warp_by_geolocation(dataset, geoloc, crs, pixel_size, bounds=None, nodata=No
     fp = footprint(igm, np.mean([x_res, y_res]))
     # Create in-memory shapefile datasource to store footprint geometry
     shp_driver = ogr.GetDriverByName('ESRI Shapefile')
-    # fp_datasource = shp_driver.CreateDataSource('/vsimem/IGM_FOOTPRINT.shp')
-    fp_datasource = shp_driver.CreateDataSource('C:/Users/bheberlein.RUSSELL/Desktop/IGM_FOOTPRINT.shp')
+    fp_datasource = shp_driver.CreateDataSource('/vsimem/IGM_FOOTPRINT.shp')
     _ = geometry_to_layer([fp], crs, fp_datasource, 'IGM_FOOTPRINT')
     
     footprint_ds_name = '/vsimem/IGM_FOOTPRINT.shp'

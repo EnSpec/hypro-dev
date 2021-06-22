@@ -158,6 +158,7 @@ from VIS              import estimate_vis
 from AtmCorr          import atm_corr_image
 from Solar            import get_sun_angles, get_sun_earth_distance
 from Interpolate      import interpolate_detectors
+from Coregistration   import do_coregistration
 
 
 def get_flight_indices(config):
@@ -687,10 +688,16 @@ def HyspexPro(config_file):
                              sensor_dict['raw_sca_image_file'],
                              sensor_dict['glt_image_file'])
 
-        
+
         # ----------------------------- Part 7 ----------------------------- #
+
+        flight_log.info(f'{"-"*10} PART 7: Co-registration of multisensor datasets.')
+        do_coregistration(flight_dict, config)
         
-        flight_log.info(f'{"-"*10} PART 7: Merge images from different sensors.')
+        
+        # ----------------------------- Part 8 ----------------------------- #
+        
+        flight_log.info(f'{"-"*10} PART 8: Merge images from different sensors.')
 
         # Merge DEM & SCA
         flight_log.info('Merge orthorectified DEM and SCA images.')
@@ -710,9 +717,9 @@ def HyspexPro(config_file):
                   flight_dict['sensors'])
 
         
-        # ----------------------------- Part 8 ----------------------------- #
+        # ----------------------------- Part 9 ----------------------------- #
         
-        flight_log.info(f'{"-"*10} PART 8: Do atmospheric corrections.')
+        flight_log.info(f'{"-"*10} PART 9: Do atmospheric corrections.')
 
         # Resample atmospheric lookup table (ALT) to sensor wavelengths
         flight_log.info('Resample the raw ALT to sensor wavelengths.')
